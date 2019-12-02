@@ -33,7 +33,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define MAX_LENGHT 8
+#define ONECHAR_LENGHT 8
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -45,14 +45,17 @@
 TIM_HandleTypeDef htim10;
 
 /* USER CODE BEGIN PV */
+uint8_t send_buffer[50];
 uint8_t A[8] = {0,1,1,0,0,0,0,1};
+uint8_t size;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM10_Init(void);
-void Decode(void);
+void Decode(void); // change char to high and low states
+void Send(); // send message
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -93,7 +96,7 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM10_Init();
   /* USER CODE BEGIN 2 */
-
+  Send();
 
 
 
@@ -124,11 +127,18 @@ int main(void)
   * @brief System Clock Configuration
   * @retval None
   */
+
+
+void Send(void)
+{
+	size = sprintf(send_buffer, "AAA");
+
+}
 void Decode(void)
 {
   uint8_t i = 0;// counter to get throw table
 
-  for(i =0; i <MAX_LENGHT; i++) // get throw table of char ang change state of pin
+  for(i =0; i <ONECHAR_LENGHT; i++) // get throw table of char ang change state of pin
   {
 	  if(A[i] == 0) // if field of array equals '0' set state of pin to low
 	  {

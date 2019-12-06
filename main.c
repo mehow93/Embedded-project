@@ -54,8 +54,9 @@ uint8_t size;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM10_Init(void);
-void Decode(void); // change char to high and low states
-void Send(); // send message
+void Send_To_Pin(void); // change '0' and '1' to high and low states
+void Send(void); // send message
+void Decimal_To_Binary(uint8_t value); // change decimal to binary
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -109,7 +110,7 @@ int main(void)
 
 
 
-	  Decode();
+	  Send_To_Pin();
 
 
 
@@ -131,10 +132,10 @@ int main(void)
 
 void Send(void)
 {
-	size = sprintf(send_buffer, "AAA");
+	size = sprintf(send_buffer, "AAAA");
 
 }
-void Decode(void)
+void Send_To_Pin(void)
 {
   uint8_t i = 0;// counter to get throw table
 
@@ -150,6 +151,11 @@ void Decode(void)
 	  }
 	  HAL_Delay(500);
   }
+}
+
+Decimal_To_Binary(uint8_t value)
+{
+
 }
 void SystemClock_Config(void)
 {

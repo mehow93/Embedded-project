@@ -34,6 +34,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define ONECHAR_LENGHT 8
+#define MAX_CHAR_VALUE 256
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -45,10 +46,21 @@
 TIM_HandleTypeDef htim10;
 
 /* USER CODE BEGIN PV */
-uint8_t send_buffer[50];
-uint8_t binary_data[8]; // buffer to hold
 uint8_t A[8] = { 0, 1, 1, 0, 0, 0, 0, 1 };
+uint8_t send_buffer[50];
+uint8_t binary_data[8]; // buffer to hold values is binary order
 uint8_t size;
+uint8_t decimal_code;
+//delate later
+uint8_t test_zero;
+uint8_t test_one;
+uint8_t test_two;
+uint8_t test_three;
+uint8_t test_four;
+uint8_t test_five;
+uint8_t test_six;
+uint8_t test_seven;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -58,6 +70,7 @@ static void MX_TIM10_Init(void);
 void Send_To_Pin(void); // change '0' and '1' to high and low states
 void Send(void); // send message
 void Decimal_To_Binary(uint8_t value); // change decimal to binary
+uint8_t Char_To_Decimal(char arg); // change char into decimal value
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -102,10 +115,20 @@ int main(void) {
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
-	while (1) {
+	while (1)
+	{
 
 		Send_To_Pin();
-
+		decimal_code = Char_To_Decimal('z');
+		Decimal_To_Binary(169);
+		test_zero = binary_data[0];
+		test_one = binary_data[1];
+		test_two = binary_data[2];
+		test_three = binary_data[3];
+		test_four = binary_data[4];
+		test_five = binary_data[5];
+		test_six = binary_data[6];
+		test_seven = binary_data[7];
 	}
 
 	/* USER CODE END WHILE */
@@ -144,7 +167,7 @@ void Send_To_Pin(void)
 
 void Decimal_To_Binary(uint8_t value) {
 	int i = 7;
-	if (value != 0 && value < 256)
+	if ((value != 0) && (value < MAX_CHAR_VALUE))
 	{
 		while (value != 0)
 		{
@@ -160,6 +183,11 @@ void Decimal_To_Binary(uint8_t value) {
 			binary_data[j] = 0;
 		}
 	}
+}
+uint8_t Char_To_Decimal(char arg)
+{
+	uint8_t result = (uint8_t)arg;
+	return result;
 }
 void SystemClock_Config(void) {
 	RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };

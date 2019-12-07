@@ -118,8 +118,8 @@ int main(void) {
 	while (1)
 	{
 
-		Send_To_Pin();
-		decimal_code = Char_To_Decimal('z');
+		//Send_To_Pin();
+		//decimal_code = Char_To_Decimal('z');
 		Decimal_To_Binary(169);
 		test_zero = binary_data[0];
 		test_one = binary_data[1];
@@ -143,8 +143,14 @@ int main(void) {
  * @retval None
  */
 
-void Send(void) {
-	size = sprintf(send_buffer, "AAAA");
+void Send(void)
+{
+	size = sprintf(send_buffer, "AAAA");// to know how many chars are in send_buffer
+	for(int i =0; i < size; i++)
+	{
+		Decimal_To_Binary(send_buffer[i]);
+		Send_To_Pin();
+	}
 
 }
 void Send_To_Pin(void)
@@ -153,7 +159,7 @@ void Send_To_Pin(void)
 
 	for (i = 0; i < ONECHAR_LENGHT; i++) // get throw table of char ang change state of pin
 	{
-		if (A[i] == 0) // if field of array equals '0' set state of pin to low
+		if (binary_data[i] == 0) // if field of array equals '0' set state of pin to low
 		{
 			HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_RESET);
 		}

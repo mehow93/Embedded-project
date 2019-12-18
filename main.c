@@ -20,6 +20,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include <string.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -48,6 +49,7 @@ TIM_HandleTypeDef htim10;
 /* USER CODE BEGIN PV */
 uint8_t A[8] = { 0, 1, 1, 0, 0, 0, 0, 1 };
 uint8_t send_buffer[50];
+uint8_t message[50]; // array to hold ready to send message
 uint8_t binary_data[8]; // buffer to hold values is binary order
 uint8_t size;
 uint8_t decimal_code;
@@ -68,9 +70,10 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM10_Init(void);
 void Send_To_Pin(void); // change '0' and '1' to high and low states
-void Send(void); // send message
+void Send_Message(void); // send message
 void Decimal_To_Binary(uint8_t value); // change decimal to binary
 uint8_t Char_To_Decimal(char arg); // change char into decimal value
+void Build_Message(void); // buid message
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -109,7 +112,7 @@ int main(void) {
 	MX_GPIO_Init();
 	MX_TIM10_Init();
 	/* USER CODE BEGIN 2 */
-	Send();
+	Send_Message();
 
 	/* USER CODE END 2 */
 
@@ -143,9 +146,9 @@ int main(void) {
  * @retval None
  */
 
-void Send(void)
+void Send_Message(void)
 {
-	size = sprintf(send_buffer, "AAAA");// to know how many chars are in send_buffer
+	size = sprintf(send_buffer, "UUU");// to know how many chars are in send_buffer
 	for(int i =0; i < size; i++)
 	{
 		Decimal_To_Binary(send_buffer[i]);
@@ -159,11 +162,11 @@ void Send_To_Pin(void)
 
 	for (i = 0; i < ONECHAR_LENGHT; i++) // get throw table of char ang change state of pin
 	{
-		if (binary_data[i] == 0) // if field of array equals '0' set state of pin to low
+		if (binary_data[i] == 0) // if field of array equals to '0' set state of pin to low
 		{
 			HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_RESET);
 		}
-	    else // if field of array equals '1' set state of pin to high
+	    else // if field of array equals to  '1' set state of pin to high
 		{
 			HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_SET);
 		}
@@ -189,6 +192,12 @@ void Decimal_To_Binary(uint8_t value) {
 			binary_data[j] = 0;
 		}
 	}
+}
+void Build_Message(void)
+{
+	message[0] = 1; // force HIGH state to start transmitting
+	uint8_t* ptr = &message[1]; // copy binary_data here
+	memcpy(ptr,binary_data,8);
 }
 uint8_t Char_To_Decimal(char arg)
 {

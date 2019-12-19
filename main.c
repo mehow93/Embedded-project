@@ -35,6 +35,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define ONECHAR_LENGHT 8
+#define MESSAGE_LENGHT 33
 #define MAX_CHAR_VALUE 256
 /* USER CODE END PD */
 
@@ -49,8 +50,9 @@ TIM_HandleTypeDef htim10;
 /* USER CODE BEGIN PV */
 uint8_t A[8] = { 0, 1, 1, 0, 0, 0, 0, 1 };
 uint8_t send_buffer[50];
-uint8_t message[50]; // array to hold ready to send message
+uint8_t message[34]; // array to hold ready to send message
 uint8_t binary_data[8]; // buffer to hold values is binary order
+uint8_t* ptr = &message[1]; // pointer to write data to message[]
 uint8_t size;
 uint8_t decimal_code;
 //delate later
@@ -73,7 +75,8 @@ void Send_To_Pin(void); // change '0' and '1' to high and low states
 void Send_Message(void); // send message
 void Decimal_To_Binary(uint8_t value); // change decimal to binary
 uint8_t Char_To_Decimal(char arg); // change char into decimal value
-void Build_Message(void); // buid message
+void Write_Binary_Data_To_Message(void); // write binary_data to message[]
+void Build_Message(void); // build message ready to sent
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -148,19 +151,22 @@ int main(void) {
 
 void Send_Message(void)
 {
-	size = sprintf(send_buffer, "UUU");// to know how many chars are in send_buffer
+	size = sprintf(send_buffer, "UUUU");// to know how many chars are in send_buffer
 	for(int i =0; i < size; i++)
 	{
 		Decimal_To_Binary(send_buffer[i]);
-		Send_To_Pin();
+		Write_Binary_Data_To_Message();
+
 	}
+	Build_Message();
+	Send_To_Pin();
 
 }
 void Send_To_Pin(void)
 {
 	uint8_t i = 0; // counter to get throw table
 
-	for (i = 0; i < ONECHAR_LENGHT; i++) // get throw table of char ang change state of pin
+	for (i = 0; i < MESSAGE_LENGHT; i++) // get throw table of char ang change state of pin
 	{
 		if (binary_data[i] == 0) // if field of array equals to '0' set state of pin to low
 		{
@@ -193,11 +199,19 @@ void Decimal_To_Binary(uint8_t value) {
 		}
 	}
 }
+void Write_Binary_Data_To_Message(void)
+{
+	memcpy(ptr,binary_data,8); // coping binary_data to message
+	if (ptr != NULL) // improve this condition, mind that ptr can point out of message[] boundaries
+	{
+		ptr = ptr+8; // move pointer to next place to save binary_data
+	}
+}
+
 void Build_Message(void)
 {
-	message[0] = 1; // force HIGH state to start transmitting
-	uint8_t* ptr = &message[1]; // copy binary_data here
-	memcpy(ptr,binary_data,8);
+	message[0] = 1; // 1 in first cell of array has to force high state to start transmitting
+	message[33] = 0; // 0 in last cell of array has to force low state to end transmitting
 }
 uint8_t Char_To_Decimal(char arg)
 {

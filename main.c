@@ -116,7 +116,8 @@ int main(void) {
 	MX_TIM10_Init();
 	/* USER CODE BEGIN 2 */
 	Send_Message();
-
+	test_zero = message[0];
+	test_one = message[33];
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
@@ -126,14 +127,14 @@ int main(void) {
 
 
 
-		test_zero = binary_data[0];
-		test_one = binary_data[1];
-		test_two = binary_data[2];
-		test_three = binary_data[3];
-		test_four = binary_data[4];
-		test_five = binary_data[5];
-		test_six = binary_data[6];
-		test_seven = binary_data[7];
+
+
+		test_two = message[2];
+		test_three = message[3];
+		test_four = message[4];
+		test_five = message[5];
+		test_six = message[6];
+		test_seven = message[7];
 	}
 
 	/* USER CODE END WHILE */
@@ -150,8 +151,9 @@ int main(void) {
 
 void Send_Message(void)
 {
+	uint8_t i = 0;
 	size = sprintf(send_buffer, "UUUU");// to know how many chars are in send_buffer
-	for(int i =0; i < size; i++)
+	for(i =0; i < size; i++)
 	{
 		Decimal_To_Binary(send_buffer[i]);
 		Write_Binary_Data_To_Message();
@@ -167,7 +169,7 @@ void Send_To_Pin(void)
 
 	for (i = 0; i < MESSAGE_LENGHT; i++) // get throw table of char ang change state of pin
 	{
-		if (binary_data[i] == 0) // if field of array equals to '0' set state of pin to low
+		if (message[i] == 0) // if field of array equals to '0' set state of pin to low
 		{
 			HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_RESET);
 		}
@@ -203,7 +205,8 @@ void Write_Binary_Data_To_Message(void)
 	memcpy(ptr,binary_data,8); // coping binary_data to message
 	if (ptr != NULL) // improve this condition, mind that ptr can point out of message[] boundaries
 	{
-		ptr = ptr+8; // move pointer to next place to save binary_data
+		ptr = ptr+8; // move pointer to next place to save binary_data[]
+
 	}
 }
 

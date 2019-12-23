@@ -21,6 +21,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include <string.h>
+#include <math.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -55,6 +56,8 @@ uint8_t binary_data[8]; // buffer to hold values is binary order
 uint8_t* ptr = &message[1]; // pointer to write data to message[]
 uint8_t size;
 uint8_t decimal_code;
+uint8_t* start_of_first_char = &message[1]; // save address of start of binary order of first char
+uint8_t* start_of_second_char = &message[9]; // save address of start of binary order of second char
 //delate later
 uint8_t test_zero;
 uint8_t test_one;
@@ -64,6 +67,10 @@ uint8_t test_four;
 uint8_t test_five;
 uint8_t test_six;
 uint8_t test_seven;
+uint8_t check_first_char=0; // to check if char was correctly change to binary value
+uint8_t check_second_char=0; // to check if char was correctly change to binary value
+uint8_t check_third_char=0; // to check if char was correctly change to binary value
+uint8_t check_fourth_char=0; // to check if char was correctly change to binary value
 
 /* USER CODE END PV */
 
@@ -77,6 +84,8 @@ void Decimal_To_Binary(uint8_t value); // change decimal to binary
 uint8_t Char_To_Decimal(char arg); // change char into decimal value
 void Write_Binary_Data_To_Message(void); // write binary_data to message[]
 void Build_Message(void); // build message ready to sent
+void Check_Chars(void); // check correctness of binary order of  sending chars
+uint8_t Binary_Into_Int(uint8_t* ptr); // change binary_data [] to uint value
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -152,7 +161,7 @@ int main(void) {
 void Send_Message(void)
 {
 	uint8_t i = 0;
-	size = sprintf(send_buffer, "UUUU");// to know how many chars are in send_buffer
+	size = sprintf(send_buffer, "DUUU");// to know how many chars are in send_buffer
 	for(i =0; i < size; i++)
 	{
 		Decimal_To_Binary(send_buffer[i]);
@@ -161,6 +170,7 @@ void Send_Message(void)
 	}
 	Build_Message();
 	Send_To_Pin();
+	Check_Chars();
 
 }
 void Send_To_Pin(void)
@@ -214,6 +224,33 @@ void Build_Message(void)
 {
 	message[0] = 1; // 1 in first cell of array has to force high state to start transmitting
 	message[33] = 0; // 0 in last cell of array has to force low state to end transmitting
+}
+uint8_t Binary_Into_Int(uint8_t* ptr)
+{
+	int i;
+	int result=0;
+	int exponent=7;
+	for(i=0;i<8;i++)
+	{
+		if((*ptr) == 1)
+		{
+			result += pow(2,exponent);
+		}
+		else
+		{
+			//do nothing
+		}
+		ptr++;
+		exponent--;
+
+	}
+	return result;
+}
+
+void Check_Chars(void)
+{
+	check_first_char = Binary_Into_Int(start_of_first_char);
+	check_second_char = Binary_Into_Int(start_of_second_char);
 }
 uint8_t Char_To_Decimal(char arg)
 {

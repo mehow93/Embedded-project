@@ -58,6 +58,8 @@ uint8_t size;
 uint8_t decimal_code;
 uint8_t* start_of_first_char = &message[1]; // save address of start of binary order of first char
 uint8_t* start_of_second_char = &message[9]; // save address of start of binary order of second char
+uint8_t* start_of_third_char = &message[17]; // save address of start of binary order of third char
+uint8_t* start_of_fourth_char = &message[25]; // save address of start of binary order of second char
 //delate later
 uint8_t test_zero;
 uint8_t test_one;
@@ -138,12 +140,7 @@ int main(void) {
 
 
 
-		test_two = message[2];
-		test_three = message[3];
-		test_four = message[4];
-		test_five = message[5];
-		test_six = message[6];
-		test_seven = message[7];
+
 	}
 
 	/* USER CODE END WHILE */
@@ -161,7 +158,7 @@ int main(void) {
 void Send_Message(void)
 {
 	uint8_t i = 0;
-	size = sprintf(send_buffer, "DUUU");// to know how many chars are in send_buffer
+	size = sprintf(send_buffer, "TEST");// to know how many chars are in send_buffer
 	for(i =0; i < size; i++)
 	{
 		Decimal_To_Binary(send_buffer[i]);
@@ -251,6 +248,8 @@ void Check_Chars(void)
 {
 	check_first_char = Binary_Into_Int(start_of_first_char);
 	check_second_char = Binary_Into_Int(start_of_second_char);
+	check_third_char = Binary_Into_Int(start_of_third_char);
+	check_fourth_char = Binary_Into_Int(start_of_fourth_char);
 }
 uint8_t Char_To_Decimal(char arg)
 {

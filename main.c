@@ -59,7 +59,7 @@ uint8_t decimal_code;
 uint8_t* start_of_first_char = &message[1]; // save address of start of binary order of first char
 uint8_t* start_of_second_char = &message[9]; // save address of start of binary order of second char
 uint8_t* start_of_third_char = &message[17]; // save address of start of binary order of third char
-uint8_t* start_of_fourth_char = &message[25]; // save address of start of binary order of second char
+uint8_t* start_of_fourth_char = &message[25]; // save address of start of binary order of fourth char
 //delate later
 uint8_t test_zero;
 uint8_t test_one;
@@ -101,7 +101,8 @@ uint8_t Binary_Into_Int(uint8_t* ptr); // change binary_data [] to uint value
  * @brief  The application entry point.
  * @retval int
  */
-int main(void) {
+int main(void)
+{
 	/* USER CODE BEGIN 1 */
 
 	/* USER CODE END 1 */
@@ -188,7 +189,8 @@ void Send_To_Pin(void)
 	}
 }
 
-void Decimal_To_Binary(uint8_t value) {
+void Decimal_To_Binary(uint8_t value)
+{
 	int i = 7;
 	if ((value != 0) && (value < MAX_CHAR_VALUE))
 	{

@@ -1,3 +1,5 @@
+
+
 /* USER CODE BEGIN Header */
 /**
  ******************************************************************************
@@ -20,6 +22,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include <string.h>
+#include <math.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -44,8 +48,6 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-CRC_HandleTypeDef hcrc;
-
 TIM_HandleTypeDef htim10;
 
 /* USER CODE BEGIN PV */
@@ -74,14 +76,25 @@ uint8_t check_second_char=0; // to check if char was correctly change to binary 
 uint8_t check_third_char=0; // to check if char was correctly change to binary value
 uint8_t check_fourth_char=0; // to check if char was correctly change to binary value
 
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM10_Init(void);
-static void MX_CRC_Init(void);
+void Send_To_Pin(void); // change '0' and '1' to high and low states
+void Send_Message(void); // send message
+void Decimal_To_Binary(uint8_t value); // change decimal to binary
+uint8_t Char_To_Decimal(char arg); // change char into decimal value
+void Write_Binary_Data_To_Message(void); // write binary_data to message[]
+void Build_Message(void); // build message ready to sent
+void Check_Chars(void); // check correctness of binary order of  sending chars
+uint8_t Binary_Into_Int(uint8_t* ptr); // change binary_data [] to uint value
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
+ if(htim->Instance == TIM10){ // Je¿eli przerwanie pochodzi od timera 10
+	 test_two++;
+ }
+}
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -92,46 +105,43 @@ static void MX_CRC_Init(void);
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
+ * @brief  The application entry point.
+ * @retval int
+ */
 int main(void)
 {
-  /* USER CODE BEGIN 1 */
+	/* USER CODE BEGIN 1 */
 
-  /* USER CODE END 1 */
-  
+	/* USER CODE END 1 */
 
-  /* MCU Configuration--------------------------------------------------------*/
+	/* MCU Configuration--------------------------------------------------------*/
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+	HAL_Init();
 
-  /* USER CODE BEGIN Init */
+	/* USER CODE BEGIN Init */
 
-  /* USER CODE END Init */
+	/* USER CODE END Init */
 
-  /* Configure the system clock */
-  SystemClock_Config();
+	/* Configure the system clock */
+	SystemClock_Config();
 
-  /* USER CODE BEGIN SysInit */
+	/* USER CODE BEGIN SysInit */
 
-  /* USER CODE END SysInit */
+	/* USER CODE END SysInit */
 
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_TIM10_Init();
-  MX_CRC_Init();
-  /* USER CODE BEGIN 2 */
+	/* Initialize all configured peripherals */
+	MX_GPIO_Init();
+	MX_TIM10_Init();
+	/* USER CODE BEGIN 2 */
 	HAL_TIM_Base_Start_IT(&htim10);
-
 	Send_Message();
 	test_zero = message[0];
 	test_one = message[33];
-  /* USER CODE END 2 */
+	/* USER CODE END 2 */
 
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
+	/* Infinite loop */
+	/* USER CODE BEGIN WHILE */
 	while (1)
 	{
 
@@ -142,142 +152,219 @@ int main(void)
 
 	}
 
+	/* USER CODE END WHILE */
 
-    /* USER CODE END WHILE */
+	/* USER CODE BEGIN 3 */
 
-    /* USER CODE BEGIN 3 */
-
-  /* USER CODE END 3 */
+	/* USER CODE END 3 */
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
-void SystemClock_Config(void)
+ * @brief System Clock Configuration
+ * @retval None
+ */
+
+void Send_Message(void)
 {
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+	uint8_t i = 0;
+	size = sprintf(send_buffer, "TEST");// to know how many chars are in send_buffer
+	for(i =0; i < size; i++)
+	{
+		Decimal_To_Binary(send_buffer[i]);
+		Write_Binary_Data_To_Message();
 
-  /** Configure the main internal regulator output voltage 
-  */
-  __HAL_RCC_PWR_CLK_ENABLE();
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
-  /** Initializes the CPU, AHB and APB busses clocks 
-  */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 4;
-  RCC_OscInitStruct.PLL.PLLN = 100;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = 5;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /** Initializes the CPU, AHB and APB busses clocks 
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+	}
+	Build_Message();
+	Send_To_Pin();
+	Check_Chars();
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
-  {
-    Error_Handler();
-  }
+}
+void Send_To_Pin(void)
+{
+	uint8_t i = 0; // counter to get throw table
+
+	for (i = 0; i < MESSAGE_LENGHT; i++) // get throw table of char ang change state of pin
+	{
+		if (message[i] == 0) // if field of array equals to '0' set state of pin to low
+		{
+			HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_RESET);
+		}
+	    else // if field of array equals to  '1' set state of pin to high
+		{
+			HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_SET);
+		}
+		HAL_Delay(100);
+	}
+}
+
+void Decimal_To_Binary(uint8_t value)
+{
+	int i = 7;
+	if ((value != 0) && (value < MAX_CHAR_VALUE))
+	{
+		while (value != 0)
+		{
+			binary_data[i] = value % 2;
+			value = value >> 1;
+			i--;
+		}
+	}
+	else
+	{
+		for (int j = 0; j < 8; j++)
+		{
+			binary_data[j] = 0;
+		}
+	}
+}
+void Write_Binary_Data_To_Message(void)
+{
+	memcpy(ptr,binary_data,8); // coping binary_data to message
+	if (ptr != NULL) // improve this condition, mind that ptr can point out of message[] boundaries
+	{
+		ptr = ptr+8; // move pointer to next place to save binary_data[]
+
+	}
+}
+
+void Build_Message(void)
+{
+	message[0] = 1; // 1 in first cell of array has to force high state to start transmitting
+	message[33] = 0; // 0 in last cell of array has to force low state to end transmitting
+}
+uint8_t Binary_Into_Int(uint8_t* ptr)
+{
+	int i;
+	int result=0;
+	int exponent=7;
+	for(i=0;i<8;i++)
+	{
+		if((*ptr) == 1)
+		{
+			result += pow(2,exponent);
+		}
+		else
+		{
+			//do nothing
+		}
+		ptr++;
+		exponent--;
+
+	}
+	return result;
+}
+
+void Check_Chars(void)
+{
+	check_first_char = Binary_Into_Int(start_of_first_char);
+	check_second_char = Binary_Into_Int(start_of_second_char);
+	check_third_char = Binary_Into_Int(start_of_third_char);
+	check_fourth_char = Binary_Into_Int(start_of_fourth_char);
+}
+uint8_t Char_To_Decimal(char arg)
+{
+	uint8_t result = (uint8_t)arg;
+	return result;
+}
+void SystemClock_Config(void) {
+	RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
+	RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
+
+	/** Configure the main internal regulator output voltage
+	 */
+	__HAL_RCC_PWR_CLK_ENABLE()
+	;
+	__HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+	/** Initializes the CPU, AHB and APB busses clocks
+	 */
+	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+	RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+	RCC_OscInitStruct.PLL.PLLM = 12;
+	RCC_OscInitStruct.PLL.PLLN = 96;
+	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+	RCC_OscInitStruct.PLL.PLLQ = 5;
+	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
+		Error_Handler();
+	}
+	/** Initializes the CPU, AHB and APB busses clocks
+	 */
+	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
+			| RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+	RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+
+	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK) {
+		Error_Handler();
+	}
 }
 
 /**
-  * @brief CRC Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_CRC_Init(void)
-{
+ * @brief TIM10 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_TIM10_Init(void) {
 
-  /* USER CODE BEGIN CRC_Init 0 */
+	/* USER CODE BEGIN TIM10_Init 0 */
 
-  /* USER CODE END CRC_Init 0 */
+	/* USER CODE END TIM10_Init 0 */
 
-  /* USER CODE BEGIN CRC_Init 1 */
+	/* USER CODE BEGIN TIM10_Init 1 */
 
-  /* USER CODE END CRC_Init 1 */
-  hcrc.Instance = CRC;
-  if (HAL_CRC_Init(&hcrc) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN CRC_Init 2 */
+	/* USER CODE END TIM10_Init 1 */
+	htim10.Instance = TIM10;
+	htim10.Init.Prescaler = 9999;
+	htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
+	htim10.Init.Period = 9998;
+	htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+	htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+	if (HAL_TIM_Base_Init(&htim10) != HAL_OK) {
+		Error_Handler();
+	}
+	/* USER CODE BEGIN TIM10_Init 2 */
 
-  /* USER CODE END CRC_Init 2 */
-
-}
-
-/**
-  * @brief TIM10 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM10_Init(void)
-{
-
-  /* USER CODE BEGIN TIM10_Init 0 */
-
-  /* USER CODE END TIM10_Init 0 */
-
-  /* USER CODE BEGIN TIM10_Init 1 */
-
-  /* USER CODE END TIM10_Init 1 */
-  htim10.Instance = TIM10;
-  htim10.Init.Prescaler = 9999;
-  htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim10.Init.Period = 9998;
-  htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_Base_Init(&htim10) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM10_Init 2 */
-
-  /* USER CODE END TIM10_Init 2 */
+	/* USER CODE END TIM10_Init 2 */
 
 }
 
 /**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_GPIO_Init(void)
-{
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
+ * @brief GPIO Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_GPIO_Init(void) {
+	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
 
-  /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOH_CLK_ENABLE();
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOD_CLK_ENABLE();
+	/* GPIO Ports Clock Enable */
+	__HAL_RCC_GPIOH_CLK_ENABLE()
+	;
+	__HAL_RCC_GPIOA_CLK_ENABLE()
+	;
+	__HAL_RCC_GPIOD_CLK_ENABLE()
+	;
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, GREEN_LIGHT_Pin|ORANGE_LIGHT_Pin|COMMUNICATION_PIN_Pin, GPIO_PIN_RESET);
+	/*Configure GPIO pin Output Level */
+	HAL_GPIO_WritePin(GPIOD,
+			GREEN_LIGHT_Pin | ORANGE_LIGHT_Pin | COMMUNICATION_PIN_Pin,
+			GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : Button_Pin */
-  GPIO_InitStruct.Pin = Button_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(Button_GPIO_Port, &GPIO_InitStruct);
+	/*Configure GPIO pin : Button_Pin */
+	GPIO_InitStruct.Pin = Button_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(Button_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : GREEN_LIGHT_Pin ORANGE_LIGHT_Pin COMMUNICATION_PIN_Pin */
-  GPIO_InitStruct.Pin = GREEN_LIGHT_Pin|ORANGE_LIGHT_Pin|COMMUNICATION_PIN_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+	/*Configure GPIO pins : GREEN_LIGHT_Pin ORANGE_LIGHT_Pin COMMUNICATION_PIN_Pin */
+	GPIO_InitStruct.Pin = GREEN_LIGHT_Pin | ORANGE_LIGHT_Pin
+			| COMMUNICATION_PIN_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
 }
 
@@ -286,32 +373,32 @@ static void MX_GPIO_Init(void)
 /* USER CODE END 4 */
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
-void Error_Handler(void)
-{
-  /* USER CODE BEGIN Error_Handler_Debug */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
+void Error_Handler(void) {
+	/* USER CODE BEGIN Error_Handler_Debug */
 	/* User can add his own implementation to report the HAL error return state */
 
-  /* USER CODE END Error_Handler_Debug */
+	/* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef  USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t *file, uint32_t line)
-{ 
-  /* USER CODE BEGIN 6 */
+{
+	/* USER CODE BEGIN 6 */
 	/* User can add his own implementation to report the file name and line number,
 	 tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-  /* USER CODE END 6 */
+	/* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+

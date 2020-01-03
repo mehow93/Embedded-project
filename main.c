@@ -61,6 +61,15 @@ uint8_t* start_of_first_char = &message[1]; // save address of start of binary o
 uint8_t* start_of_second_char = &message[9]; // save address of start of binary order of second char
 uint8_t* start_of_third_char = &message[17]; // save address of start of binary order of third char
 uint8_t* start_of_fourth_char = &message[25]; // save address of start of binary order of fourth char
+
+enum state_machine
+{
+	ENABLE_TRANSMITTING,
+	DISABLE_TRANSMITTING,
+	TRANSMITTING_ON,
+	TRANSMITTING_OFF
+
+};
 //delate later
 uint8_t test_zero;
 uint8_t test_one;
@@ -91,7 +100,7 @@ void Build_Message(void); // build message ready to sent
 void Check_Chars(void); // check correctness of binary order of  sending chars
 uint8_t Binary_Into_Int(uint8_t* ptr); // change binary_data [] to uint value
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
- if(htim->Instance == TIM10){ //
+ if(htim->Instance == TIM10){ // if interrupt from timer10 occurs
 	 test_two++;
  }
 }
@@ -137,7 +146,7 @@ int main(void)
   MX_CRC_Init();
   /* USER CODE BEGIN 2 */
 	HAL_TIM_Base_Start_IT(&htim10);
-	//Send_Message();
+	Send_Message();
 	test_zero = message[0];
 	test_one = message[33];
   /* USER CODE END 2 */

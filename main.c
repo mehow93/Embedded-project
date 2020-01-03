@@ -69,7 +69,9 @@ enum state_machine
 	TRANSMITTING_ON,
 	TRANSMITTING_OFF
 
-};
+}typedef state_of_transmition; // state machine to control transmittion
+
+state_of_transmition state = DISABLE_TRANSMITTING;
 //delate later
 uint8_t test_zero;
 uint8_t test_one;
@@ -99,10 +101,18 @@ void Write_Binary_Data_To_Message(void); // write binary_data to message[]
 void Build_Message(void); // build message ready to sent
 void Check_Chars(void); // check correctness of binary order of  sending chars
 uint8_t Binary_Into_Int(uint8_t* ptr); // change binary_data [] to uint value
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){ // interrupt from timer
  if(htim->Instance == TIM10){ // if interrupt from timer10 occurs
 	 test_two++;
  }
+}
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){ // interrupt from button
+	if(state == DISABLE_TRANSMITTING) // prevoius transmition must be ended
+	{
+		state = ENABLE_TRANSMITTING; // enable transmiiting
+	}
+
+
 }
 /* USER CODE BEGIN PFP */
 
@@ -145,10 +155,14 @@ int main(void)
   MX_TIM10_Init();
   MX_CRC_Init();
   /* USER CODE BEGIN 2 */
-	HAL_TIM_Base_Start_IT(&htim10);
-	Send_Message();
-	test_zero = message[0];
-	test_one = message[33];
+  HAL_TIM_Base_Start_IT(&htim10);
+  if(state = ENABLE_TRANSMITTING)
+  {
+	  Send_Message();
+  }
+
+  test_zero = message[0];
+  test_one = message[33];
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -172,7 +186,6 @@ int main(void)
   * @brief System Clock Configuration
   * @retval None
   */
-
 void Send_Message(void)
 {
 	uint8_t i = 0;
@@ -186,6 +199,7 @@ void Send_Message(void)
 	Build_Message();
 	Send_To_Pin();
 	Check_Chars();
+	state = DISABLE_TRANSMITTING;
 
 }
 void Send_To_Pin(void)
@@ -382,11 +396,11 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, GREEN_LIGHT_Pin|ORANGE_LIGHT_Pin|COMMUNICATION_PIN_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : Button_Pin */
-  GPIO_InitStruct.Pin = Button_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  /*Configure GPIO pin : BUTTON_Pin */
+  GPIO_InitStruct.Pin = BUTTON_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(Button_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(BUTTON_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : GREEN_LIGHT_Pin ORANGE_LIGHT_Pin COMMUNICATION_PIN_Pin */
   GPIO_InitStruct.Pin = GREEN_LIGHT_Pin|ORANGE_LIGHT_Pin|COMMUNICATION_PIN_Pin;
@@ -394,6 +408,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
 
 }
 

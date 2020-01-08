@@ -101,18 +101,23 @@ void Write_Binary_Data_To_Message(void); // write binary_data to message[]
 void Build_Message(void); // build message ready to sent
 void Check_Chars(void); // check correctness of binary order of  sending chars
 uint8_t Binary_Into_Int(uint8_t* ptr); // change binary_data [] to uint value
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){ // interrupt from timer
- if(htim->Instance == TIM10){ // if interrupt from timer10 occurs
-	 test_two++;
- }
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)// interrupt from timer
+{
+ if(htim->Instance == TIM10)
+ 	 { // if interrupt from timer10 occurs
+	 	 test_two++;
+	  	  if(state == ENABLE_TRANSMITTING)
+	  	  {
+	  		  Send_Message();
+	  	  }
+ 	 }
 }
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){ // interrupt from button
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)// interrupt from button
+{
 	if(state == DISABLE_TRANSMITTING) // prevoius transmition must be ended
 	{
 		state = ENABLE_TRANSMITTING; // enable transmiiting
 	}
-
-
 }
 /* USER CODE BEGIN PFP */
 
@@ -156,13 +161,14 @@ int main(void)
   MX_CRC_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim10);
-  if(state = ENABLE_TRANSMITTING)
-  {
-	  Send_Message();
-  }
+
 
   test_zero = message[0];
   test_one = message[33];
+  check_first_char=1;
+  check_second_char=1;
+  check_third_char=1;
+  check_fourth_char=1;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -216,7 +222,7 @@ void Send_To_Pin(void)
 		{
 			HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_SET);
 		}
-		HAL_Delay(100);
+
 	}
 }
 

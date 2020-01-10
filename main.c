@@ -50,7 +50,7 @@ CRC_HandleTypeDef hcrc;
 TIM_HandleTypeDef htim10;
 
 /* USER CODE BEGIN PV */
-uint8_t A[8] = { 0, 1, 1, 0, 0, 0, 0, 1 };
+uint8_t bit_to_set = 0; // counter to set which value from message[] will be written to pin
 uint8_t send_buffer[50];
 uint8_t message[34]; // array to hold ready to send message
 uint8_t binary_data[8]; // buffer to hold values is binary order
@@ -66,7 +66,7 @@ enum state_machine
 {
 	ENABLE_TRANSMITTING,
 	DISABLE_TRANSMITTING,
-	TRANSMITTING_ON,
+	ENABLE_SEND_TO_PIN,
 	TRANSMITTING_OFF
 
 }typedef state_of_transmition; // state machine to control transmittion
@@ -106,17 +106,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)// interrupt from tim
  if(htim->Instance == TIM10)
  	 { // if interrupt from timer10 occurs
 	 	 test_two++;
-	  	  if(state == ENABLE_TRANSMITTING)
-	  	  {
-	  		  Send_Message();
-	  	  }
+
  	 }
 }
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)// interrupt from button
 {
 	if(state == DISABLE_TRANSMITTING) // prevoius transmition must be ended
 	{
-		state = ENABLE_TRANSMITTING; // enable transmiiting
+		state = ENABLE_TRANSMITTING; // enable transmitting
 	}
 }
 /* USER CODE BEGIN PFP */
@@ -175,7 +172,10 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 	while (1)
 	{
-
+		if(state == ENABLE_TRANSMITTING)
+	  	{
+			Send_Message();
+	  	}
 
 
 
@@ -210,19 +210,18 @@ void Send_Message(void)
 }
 void Send_To_Pin(void)
 {
-	uint8_t i = 0; // counter to get throw table
 
-	for (i = 0; i < MESSAGE_LENGHT; i++) // get throw table of char ang change state of pin
+	if(bit_to_set < 35) // to check if program is not out of message[] boundaries
 	{
-		if (message[i] == 0) // if field of array equals to '0' set state of pin to low
+		if (message[bit_to_set] == 0) // if field of array equals to '0' set state of pin to low
 		{
 			HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_RESET);
 		}
-	    else // if field of array equals to  '1' set state of pin to high
+		else // if field of array equals to  '1' set state of pin to high
 		{
 			HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_SET);
 		}
-
+		bit_to_set++; // move to next 'bit'
 	}
 }
 

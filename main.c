@@ -67,7 +67,8 @@ enum state_machine
 	ENABLE_TRANSMITTING,
 	DISABLE_TRANSMITTING,
 	ENABLE_SEND_TO_PIN,
-	TRANSMITTING_OFF
+	CHECK_CHARS,
+
 
 }typedef state_of_transmition; // state machine to control transmittion
 
@@ -103,10 +104,13 @@ void Check_Chars(void); // check correctness of binary order of  sending chars
 uint8_t Binary_Into_Int(uint8_t* ptr); // change binary_data [] to uint value
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)// interrupt from timer
 {
- if(htim->Instance == TIM10)
- 	 { // if interrupt from timer10 occurs
-	 	 test_two++;
-
+	if(htim->Instance == TIM10)// if interrupt from timer10 occurs
+ 	{
+	 	test_two++;
+	 	if(state == ENABLE_SEND_TO_PIN)
+	 	{
+	 		Send_To_Pin();
+	 	}
  	 }
 }
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)// interrupt from button
@@ -176,8 +180,10 @@ int main(void)
 	  	{
 			Send_Message();
 	  	}
-
-
+		else if (state == CHECK_CHARS)
+		{
+			Check_Chars();
+		}
 
 	}
 
@@ -203,15 +209,13 @@ void Send_Message(void)
 
 	}
 	Build_Message();
-	Send_To_Pin();
-	Check_Chars();
-	state = DISABLE_TRANSMITTING;
+	state = ENABLE_SEND_TO_PIN; // start Send_To_Pin() in timer10 interrupt
 
 }
 void Send_To_Pin(void)
 {
 
-	if(bit_to_set < 35) // to check if program is not out of message[] boundaries
+	if(bit_to_set < 34) // to check if program is not out of message[] boundaries
 	{
 		if (message[bit_to_set] == 0) // if field of array equals to '0' set state of pin to low
 		{
@@ -222,6 +226,11 @@ void Send_To_Pin(void)
 			HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_SET);
 		}
 		bit_to_set++; // move to next 'bit'
+	}
+	else
+	{
+		bit_to_set = 0;
+		state = CHECK_CHARS;
 	}
 }
 
@@ -288,6 +297,8 @@ void Check_Chars(void)
 	check_second_char = Binary_Into_Int(start_of_second_char);
 	check_third_char = Binary_Into_Int(start_of_third_char);
 	check_fourth_char = Binary_Into_Int(start_of_fourth_char);
+
+	state = DISABLE_TRANSMITTING; // end transmittion
 }
 void SystemClock_Config(void)
 {

@@ -34,8 +34,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define ONECHAR_LENGHT 8
-#define MESSAGE_LENGHT 34
+
+#define MESSAGE_LENGTH 34
 #define MAX_CHAR_VALUE 256
 /* USER CODE END PD */
 
@@ -215,7 +215,7 @@ void Send_Message(void)
 void Send_To_Pin(void)
 {
 
-	if(bit_to_set < 34) // to check if program is not out of message[] boundaries
+	if(bit_to_set < MESSAGE_LENGTH) // to check if program is not out of message[] boundaries
 	{
 		if (message[bit_to_set] == 0) // if field of array equals to '0' set state of pin to low
 		{

@@ -256,7 +256,7 @@ void Decimal_To_Binary(uint8_t value)
 }
 void Write_Binary_Data_To_Message(void)
 {
-	memcpy(start_of_char,binary_data,8); // coping binary_data to message
+	memcpy(start_of_char,binary_data,8); // copying binary_data to message
 	if (start_of_char != NULL) // improve this condition, mind that ptr can point out of message[] boundaries
 	{
 		start_of_char = start_of_char+8; // move pointer to next place to save binary_data[]

@@ -54,7 +54,7 @@ uint8_t bit_to_set = 0; // counter to set which value from message[] will be wri
 uint8_t send_buffer[50];
 uint8_t message[34]; // array to hold ready to send message
 uint8_t binary_data[8]; // buffer to hold values is binary order
-uint8_t* ptr = &message[1]; // pointer to write data to message[]
+uint8_t* start_of_char = &message[1]; // pointer to write data to message[]
 uint8_t size;
 uint8_t decimal_code;
 uint8_t* start_of_first_char = &message[1]; // save address of start of binary order of first char
@@ -72,7 +72,7 @@ enum state_machine
 
 }typedef state_of_transmition; // state machine to control transmittion
 
-state_of_transmition state = DISABLE_TRANSMITTING;
+state_of_transmition state = NO_TRANSMITTING;
 //delate later
 uint8_t test_zero;
 uint8_t test_one;
@@ -107,7 +107,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)// interrupt from tim
 	if(htim->Instance == TIM10)// if interrupt from timer10 occurs
  	{
 	 	test_two++;
-	 	if(state == ENABLE_SEND_TO_PIN)
+	 	if(state == SENDING_TO_PIN)
 	 	{
 	 		Send_To_Pin();
 	 	}
@@ -115,9 +115,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)// interrupt from tim
 }
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)// interrupt from button
 {
-	if(state == DISABLE_TRANSMITTING) // prevoius transmition must be ended
+	if(state == NO_TRANSMITTING) // prevoius transmition must be ended
 	{
-		state = ENABLE_TRANSMITTING; // enable transmitting
+		state = TRANSMITTING; // enable transmitting
 	}
 }
 /* USER CODE BEGIN PFP */
@@ -256,10 +256,10 @@ void Decimal_To_Binary(uint8_t value)
 }
 void Write_Binary_Data_To_Message(void)
 {
-	memcpy(ptr,binary_data,8); // coping binary_data to message
-	if (ptr != NULL) // improve this condition, mind that ptr can point out of message[] boundaries
+	memcpy(start_of_char,binary_data,8); // coping binary_data to message
+	if (start_of_char != NULL) // improve this condition, mind that ptr can point out of message[] boundaries
 	{
-		ptr = ptr+8; // move pointer to next place to save binary_data[]
+		start_of_char = start_of_char+8; // move pointer to next place to save binary_data[]
 
 	}
 }

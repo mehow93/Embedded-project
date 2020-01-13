@@ -64,10 +64,10 @@ uint8_t* start_of_fourth_char = &message[25]; // save address of start of binary
 
 enum state_machine
 {
-	ENABLE_TRANSMITTING,
-	DISABLE_TRANSMITTING,
-	ENABLE_SEND_TO_PIN,
-	CHECK_CHARS,
+	TRANSMITTING,
+	NO_TRANSMITTING,
+	SENDING_TO_PIN,
+	CHECKING_CHARS,
 
 
 }typedef state_of_transmition; // state machine to control transmittion
@@ -176,11 +176,11 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 	while (1)
 	{
-		if(state == ENABLE_TRANSMITTING)
+		if(state == TRANSMITTING)
 	  	{
 			Send_Message();
 	  	}
-		else if (state == CHECK_CHARS)
+		else if (state == CHECKING_CHARS)
 		{
 			Check_Chars();
 		}
@@ -209,7 +209,7 @@ void Send_Message(void)
 
 	}
 	Build_Message();
-	state = ENABLE_SEND_TO_PIN; // start Send_To_Pin() in timer10 interrupt
+	state = SENDING_TO_PIN; // start Send_To_Pin() in timer10 interrupt
 
 }
 void Send_To_Pin(void)
@@ -230,7 +230,7 @@ void Send_To_Pin(void)
 	else
 	{
 		bit_to_set = 0;
-		state = CHECK_CHARS;
+		state = CHECKING_CHARS;
 	}
 }
 
@@ -298,7 +298,7 @@ void Check_Chars(void)
 	check_third_char = Binary_Into_Int(start_of_third_char);
 	check_fourth_char = Binary_Into_Int(start_of_fourth_char);
 
-	state = DISABLE_TRANSMITTING; // end transmittion
+	state = NO_TRANSMITTING; // end transmittion
 }
 void SystemClock_Config(void)
 {

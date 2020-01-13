@@ -36,7 +36,7 @@
 /* USER CODE BEGIN PD */
 
 #define MESSAGE_LENGTH 34
-#define MAX_CHAR_VALUE 256
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -237,7 +237,7 @@ void Send_To_Pin(void)
 void Decimal_To_Binary(uint8_t value)
 {
 	int i = 7;
-	if ((value != 0) && (value < MAX_CHAR_VALUE))
+	if (value != 0)
 	{
 		while (value != 0)
 		{

@@ -35,7 +35,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-#define MESSAGE_LENGTH 34
+#define MESSAGE_LENGTH 6
 
 /* USER CODE END PD */
 
@@ -50,17 +50,18 @@ CRC_HandleTypeDef hcrc;
 TIM_HandleTypeDef htim10;
 
 /* USER CODE BEGIN PV */
-uint8_t bit_to_set = 0; // counter to set which value from message[] will be written to pin
+uint8_t check_tab_counter = 0; // counter to set go throw check[]
 uint8_t send_buffer[50];
-uint8_t message[34]; // array to hold ready to send message
+uint8_t message[6]; // array to hold ready to send message
 uint8_t binary_data[8]; // buffer to hold values is binary order
-uint8_t* start_of_char = &message[1]; // pointer to write data to message[]
+uint8_t check[32];
+uint8_t* start_of_chars = &message[1]; // pointer to write data to message[]
 uint8_t size;
 uint8_t decimal_code;
-uint8_t* start_of_first_char = &message[1]; // save address of start of binary order of first char
-uint8_t* start_of_second_char = &message[9]; // save address of start of binary order of second char
-uint8_t* start_of_third_char = &message[17]; // save address of start of binary order of third char
-uint8_t* start_of_fourth_char = &message[25]; // save address of start of binary order of fourth char
+uint8_t* start_of_first_char = &check[0]; // save address of start of binary order of first char
+uint8_t* start_of_second_char = &check[8]; // save address of start of binary order of second char
+uint8_t* start_of_third_char = &check[16]; // save address of start of binary order of third char
+uint8_t* start_of_fourth_char = &check[24]; // save address of start of binary order of fourth char
 
 enum state_machine
 {
@@ -73,11 +74,14 @@ enum state_machine
 }typedef state_of_transmition; // state machine to control transmittion
 
 state_of_transmition state = NO_TRANSMITTING;
+// this to variables later make as static local variables in HAL_TIM_PeriodElapsedCallback()
+uint8_t shift_counter = 0; // check how many shifts were made
+uint8_t msg_counter = 0; // to choose char from message[]
 //delate later
 uint8_t test_zero;
 uint8_t test_one;
-uint8_t test_two=0;
-uint8_t test_three=0;
+uint8_t test_two;
+uint8_t test_three;
 uint8_t test_four;
 uint8_t test_five;
 uint8_t test_six;
@@ -87,6 +91,7 @@ uint8_t check_second_char=0; // to check if char was correctly change to binary 
 uint8_t check_third_char=0; // to check if char was correctly change to binary value
 uint8_t check_fourth_char=0; // to check if char was correctly change to binary value
 
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -94,9 +99,9 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM10_Init(void);
 static void MX_CRC_Init(void);
-void Send_To_Pin(void); // change '0' and '1' to high and low states
+void Send_To_Pin(uint8_t state); // change '0' and '1' to high and low states
 void Send_Message(void); // send message
-void Decimal_To_Binary(uint8_t value); // change decimal to binary
+uint8_t Decimal_To_Binary(uint8_t value); // change decimal to binary
 uint8_t Char_To_Decimal(char arg); // change char into decimal value
 void Write_Binary_Data_To_Message(void); // write binary_data to message[]
 void Build_Message(void); // build message ready to sent
@@ -104,12 +109,44 @@ void Check_Chars(void); // check correctness of binary order of  sending chars
 uint8_t Binary_Into_Int(uint8_t* ptr); // change binary_data [] to uint value
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)// interrupt from timer
 {
+
+	uint8_t bit_shift = 0x01; // shift 1 bit
+
 	if(htim->Instance == TIM10)// if interrupt from timer10 occurs
  	{
-	 	test_two++;
+
 	 	if(state == SENDING_TO_PIN)
 	 	{
-	 		Send_To_Pin();
+	 		if(msg_counter == 0) // this is start of transmitting
+	 		{
+	 			HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_SET);
+	 			msg_counter++;
+	 		}
+	 		else if (msg_counter == 5) // this is end of transmiiting - set
+	 		{
+	 			HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_RESET);
+	 			msg_counter =0; // restart reading from message[]
+	 			state = CHECKING_CHARS; // set state machine to checking chars
+	 		}
+	 		else //start decoding
+	 		{
+	 			uint8_t result = Decimal_To_Binary(message[msg_counter]); //send first char to masking
+	 			Send_To_Pin(result); // changes state of pin
+	 			message[msg_counter] = message[msg_counter] >> bit_shift;// shift char by one bit
+	 			shift_counter++; // add one shift
+	 			check[check_tab_counter] = result;
+	 			check_tab_counter++;
+				if(shift_counter == 8) // if one char is whole masked and send to pin
+				{
+					shift_counter =0;// reset shift counter
+					msg_counter++; // move to next char in message[]
+				}
+				else
+				{
+					//do nothing
+				}
+
+	 		}
 	 	}
  	 }
 }
@@ -200,69 +237,46 @@ int main(void)
   */
 void Send_Message(void)
 {
-	uint8_t i = 0;
-	size = sprintf(send_buffer, "TEST");// to know how many chars are in send_buffer
-	for(i =0; i < size; i++)
-	{
-		Decimal_To_Binary(send_buffer[i]);
-		Write_Binary_Data_To_Message();
 
-	}
+	uint8_t size = sprintf(send_buffer, "TEST");// to know how many chars are in send_buffer
+	memcpy(start_of_chars,&send_buffer,size); // copy send_buffer to message[]
 	Build_Message();
+	test_zero=message[0];
+	test_one=message[1];
+	test_two=message[2];
+	test_three=message[3];
+	test_four=message[4];
+	test_five=message[5];
 	state = SENDING_TO_PIN; // start Send_To_Pin() in timer10 interrupt
 
 }
-void Send_To_Pin(void)
+void Send_To_Pin(uint8_t state)
 {
 
-	if(bit_to_set < MESSAGE_LENGTH) // to check if program is not out of message[] boundaries
+	if (state == 0) // if field of array equals to '0' set state of pin to low
 	{
-		if (message[bit_to_set] == 0) // if field of array equals to '0' set state of pin to low
-		{
-			HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_RESET);
-		}
-		else // if field of array equals to  '1' set state of pin to high
-		{
-			HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_SET);
-		}
-		bit_to_set++; // move to next 'bit'
+		HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_RESET);
 	}
-	else
+	else // if field of array equals to  '1' set state of pin to high
 	{
-		bit_to_set = 0;
-		state = CHECKING_CHARS;
+		HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_SET);
 	}
+
 }
 
-void Decimal_To_Binary(uint8_t value)
+uint8_t Decimal_To_Binary(uint8_t value)
 {
-	int i = 7;
-	if (value != 0)
-	{
-		while (value != 0)
-		{
-			binary_data[i] = value % 2;
-			value = value >> 1;
-			i--;
-		}
-	}
-	else
-	{
-		for (int j = 0; j < 8; j++)
-		{
-			binary_data[j] = 0;
-		}
-	}
+	return(value & 0x01);
 }
-void Write_Binary_Data_To_Message(void)
+/*void Write_Binary_Data_To_Message(void)
 {
-	memcpy(start_of_char,binary_data,8); // copying binary_data to message
+	memcpy(start_of_chars,binary_data,8); // copying binary_data to message
 	if (start_of_char != NULL) // improve this condition, mind that ptr can point out of message[] boundaries
 	{
 		start_of_char = start_of_char+8; // move pointer to next place to save binary_data[]
 
 	}
-}
+}*/
 
 void Build_Message(void)
 {

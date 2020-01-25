@@ -75,9 +75,10 @@ enum sending_state_machine
 	SETTING_START_BIT,
 	DECODING,
 	SETTING_END_BIT
-}typedef sending_state;
+}typedef sending_state_machine;
 
 state_of_transmition state = NO_TRANSMITTING;
+sending_state_machine sending_state  = SETTING_START_BIT;
 // this to variables later make as static local variables in HAL_TIM_PeriodElapsedCallback()
 uint8_t shift_counter = 0; // check how many shifts were made
 uint8_t msg_counter = 0; // to choose char from message[]
@@ -120,16 +121,18 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)// interrupt from tim
 
 	 	if(state == SENDING_TO_PIN)
 	 	{
-	 		if(msg_counter == 0) // this is start of transmitting
+	 		if(sending_state == SETTING_START_BIT) // this is start of transmitting
 	 		{
 	 			HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_SET);
-	 			msg_counter++;
+	 			sending_state = DECODING;
 	 		}
-	 		else if (msg_counter == 5) // this is end of transmiiting - set Low state
+	 		else if (sending_state == SETTING_END_BIT) // this is end of transmiiting - set Low state
 	 		{
 	 			HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_RESET);
 	 			msg_counter =0; // restart reading from send_buffer[]
 	 			state = CHECKING_CHARS; // set state machine to checking chars
+	 			msg_counter =0; //reset
+	 			sending_state = SETTING_START_BIT; // back to first stae
 	 		}
 	 		else //start decoding
 	 		{
@@ -147,6 +150,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)// interrupt from tim
 				else
 				{
 					//do nothing
+				}
+				if(msg_counter == 4)
+				{
+					sending_state = SETTING_END_BIT; // enable end of transmition
+					msg_counter =0;
+				}
+				else
+				{
+					// do nothing
 				}
 
 	 		}
@@ -240,9 +252,7 @@ int main(void)
 void Send_Message(void)
 {
 
-	size = sprintf(send_buffer, "ABCD");// to know how many chars are in send_buffer
-	//memcpy(start_of_chars,&send_buffer,size); // copy send_buffer to message[]
-	//Build_Message();
+	size = sprintf(send_buffer, "TEST");// to know how many chars are in send_buffer
 	test_zero=send_buffer[0];
 	test_one=send_buffer[1];
 	test_two=send_buffer[2];
@@ -271,11 +281,6 @@ uint8_t Decimal_To_Binary(uint8_t value)
 }
 
 
-/*void Build_Message(void)
-{
-	message[0] = 1; // 1 in first cell of array has to force high state to start transmitting
-	message[33] = 0; // 0 in last cell of array has to force low state to end transmitting
-}*/
 uint8_t Binary_Into_Int(uint8_t* ptr)
 {
 	int i;
@@ -306,6 +311,7 @@ void Check_Chars(void)
 	check_fourth_char = Binary_Into_Int(start_of_fourth_char);
 
 	state = NO_TRANSMITTING; // end transmittion
+	check_tab_counter=0;
 }
 void SystemClock_Config(void)
 {

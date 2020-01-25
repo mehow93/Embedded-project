@@ -51,11 +51,9 @@ TIM_HandleTypeDef htim10;
 
 /* USER CODE BEGIN PV */
 uint8_t check_tab_counter = 0; // counter to set go throw check[]
-uint8_t send_buffer[50];
-uint8_t message[6]; // array to hold ready to send message
+uint8_t send_buffer[4]; // to hold input string
 uint8_t binary_data[8]; // buffer to hold values is binary order
 uint8_t check[32];
-uint8_t* start_of_chars = &message[1]; // pointer to write data to message[]
 uint8_t size;
 uint8_t decimal_code;
 uint8_t* start_of_first_char = &check[7]; // save address of start of binary order of first char
@@ -72,6 +70,12 @@ enum state_machine
 
 
 }typedef state_of_transmition; // state machine to control transmittion
+enum sending_state_machine
+{
+	SETTING_START_BIT,
+	DECODING,
+	SETTING_END_BIT
+}typedef sending_state;
 
 state_of_transmition state = NO_TRANSMITTING;
 // this to variables later make as static local variables in HAL_TIM_PeriodElapsedCallback()
@@ -103,7 +107,6 @@ void Send_To_Pin(uint8_t state); // change '0' and '1' to high and low states
 void Send_Message(void); // send message
 uint8_t Decimal_To_Binary(uint8_t value); // change decimal to binary
 uint8_t Char_To_Decimal(char arg); // change char into decimal value
-void Write_Binary_Data_To_Message(void); // write binary_data to message[]
 void Build_Message(void); // build message ready to sent
 void Check_Chars(void); // check correctness of binary order of  sending chars
 uint8_t Binary_Into_Int(uint8_t* ptr); // change binary_data [] to uint value
@@ -125,14 +128,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)// interrupt from tim
 	 		else if (msg_counter == 5) // this is end of transmiiting - set Low state
 	 		{
 	 			HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_RESET);
-	 			msg_counter =0; // restart reading from message[]
+	 			msg_counter =0; // restart reading from send_buffer[]
 	 			state = CHECKING_CHARS; // set state machine to checking chars
 	 		}
 	 		else //start decoding
 	 		{
-	 			uint8_t result = Decimal_To_Binary(message[msg_counter]); //send first char to masking
+	 			uint8_t result = Decimal_To_Binary(send_buffer[msg_counter]); //send first char to masking
 	 			Send_To_Pin(result); // changes state of pin
-	 			message[msg_counter] = message[msg_counter] >> bit_shift;// shift char by one bit
+	 			send_buffer[msg_counter] = send_buffer[msg_counter] >> bit_shift;// shift char by one bit
 	 			shift_counter++; // add one shift
 	 			check[check_tab_counter] = result;
 	 			check_tab_counter++;
@@ -201,8 +204,7 @@ int main(void)
   HAL_TIM_Base_Start_IT(&htim10);
 
 
-  test_zero = message[0];
-  test_one = message[33];
+
   check_first_char=1;
   check_second_char=1;
   check_third_char=1;
@@ -238,15 +240,14 @@ int main(void)
 void Send_Message(void)
 {
 
-	uint8_t size = sprintf(send_buffer, "ABCD");// to know how many chars are in send_buffer
-	memcpy(start_of_chars,&send_buffer,size); // copy send_buffer to message[]
-	Build_Message();
-	test_zero=message[0];
-	test_one=message[1];
-	test_two=message[2];
-	test_three=message[3];
-	test_four=message[4];
-	test_five=message[5];
+	size = sprintf(send_buffer, "ABCD");// to know how many chars are in send_buffer
+	//memcpy(start_of_chars,&send_buffer,size); // copy send_buffer to message[]
+	//Build_Message();
+	test_zero=send_buffer[0];
+	test_one=send_buffer[1];
+	test_two=send_buffer[2];
+	test_three=send_buffer[3];
+
 	state = SENDING_TO_PIN; // start Send_To_Pin() in timer10 interrupt
 
 }
@@ -268,21 +269,13 @@ uint8_t Decimal_To_Binary(uint8_t value)
 {
 	return(value & 0x01);
 }
-/*void Write_Binary_Data_To_Message(void)
-{
-	memcpy(start_of_chars,binary_data,8); // copying binary_data to message
-	if (start_of_char != NULL) // improve this condition, mind that ptr can point out of message[] boundaries
-	{
-		start_of_char = start_of_char+8; // move pointer to next place to save binary_data[]
 
-	}
-}*/
 
-void Build_Message(void)
+/*void Build_Message(void)
 {
 	message[0] = 1; // 1 in first cell of array has to force high state to start transmitting
 	message[33] = 0; // 0 in last cell of array has to force low state to end transmitting
-}
+}*/
 uint8_t Binary_Into_Int(uint8_t* ptr)
 {
 	int i;

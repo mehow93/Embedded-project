@@ -58,10 +58,10 @@ uint8_t check[32];
 uint8_t* start_of_chars = &message[1]; // pointer to write data to message[]
 uint8_t size;
 uint8_t decimal_code;
-uint8_t* start_of_first_char = &check[0]; // save address of start of binary order of first char
-uint8_t* start_of_second_char = &check[8]; // save address of start of binary order of second char
-uint8_t* start_of_third_char = &check[16]; // save address of start of binary order of third char
-uint8_t* start_of_fourth_char = &check[24]; // save address of start of binary order of fourth char
+uint8_t* start_of_first_char = &check[7]; // save address of start of binary order of first char
+uint8_t* start_of_second_char = &check[15]; // save address of start of binary order of second char
+uint8_t* start_of_third_char = &check[23]; // save address of start of binary order of third char
+uint8_t* start_of_fourth_char = &check[31]; // save address of start of binary order of fourth char
 
 enum state_machine
 {
@@ -122,7 +122,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)// interrupt from tim
 	 			HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_SET);
 	 			msg_counter++;
 	 		}
-	 		else if (msg_counter == 5) // this is end of transmiiting - set
+	 		else if (msg_counter == 5) // this is end of transmiiting - set Low state
 	 		{
 	 			HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_RESET);
 	 			msg_counter =0; // restart reading from message[]
@@ -298,7 +298,7 @@ uint8_t Binary_Into_Int(uint8_t* ptr)
 		{
 			//do nothing
 		}
-		ptr++;
+		ptr--;
 		exponent--;
 
 	}

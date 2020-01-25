@@ -238,7 +238,7 @@ int main(void)
 void Send_Message(void)
 {
 
-	uint8_t size = sprintf(send_buffer, "TEST");// to know how many chars are in send_buffer
+	uint8_t size = sprintf(send_buffer, "ABCD");// to know how many chars are in send_buffer
 	memcpy(start_of_chars,&send_buffer,size); // copy send_buffer to message[]
 	Build_Message();
 	test_zero=message[0];

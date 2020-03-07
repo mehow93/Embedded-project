@@ -50,8 +50,19 @@
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
-
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	if(GPIO_Pin == RT_PIN_Pin)
+	{
+		if(HAL_GPIO_ReadPin(RT_PIN_GPIO_Port, RT_PIN_Pin) == GPIO_PIN_SET)
+		{
+			HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
+		}
+		else
+		{
+			HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
+		}
+	}
 }
 /* USER CODE BEGIN PFP */
 
@@ -156,9 +167,19 @@ static void MX_GPIO_Init(void)
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_11|LED_GREEN_Pin|GPIO_PIN_13, GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : PD11 LED_GREEN_Pin PD13 */
+  GPIO_InitStruct.Pin = GPIO_PIN_11|LED_GREEN_Pin|GPIO_PIN_13;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
   /*Configure GPIO pin : RT_PIN_Pin */
   GPIO_InitStruct.Pin = RT_PIN_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(RT_PIN_GPIO_Port, &GPIO_InitStruct);
 

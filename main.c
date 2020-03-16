@@ -42,7 +42,8 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-
+uint8_t msg[34]; // to hold states of pin
+uint8_t msg_counter =0;// counter to go throw msg[]
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -52,15 +53,30 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
+
+
+	if(msg_counter == 33) // end of msg[], time to reset msg_counter
+	{
+		msg_counter =0;
+	}
+	else
+	{
+		//do nothing
+	}
 	if(GPIO_Pin == RT_PIN_Pin)
 	{
 		if(HAL_GPIO_ReadPin(RT_PIN_GPIO_Port, RT_PIN_Pin) == GPIO_PIN_SET)
 		{
 			HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
+			msg[msg_counter] = 1; // wrtite '1' to msg[]
+			msg_counter++; //move to another cell for next state of pin
 		}
 		else
 		{
 			HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
+			msg[msg_counter] = 0; // write '1' to msg[]
+			msg_counter++; //move to another cell for next state of pin
+
 		}
 	}
 }

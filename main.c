@@ -51,34 +51,14 @@ uint8_t msg_counter =0;// counter to go throw msg[]
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+void Check_State_Of_Pin();// check state and write 1 or 0 to msg[]
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) // interrupt from RT_PIN
 {
-
-
-	if(msg_counter == 33) // end of msg[], time to reset msg_counter
-	{
-		msg_counter =0;
-	}
-	else
-	{
-		//do nothing
-	}
 	if(GPIO_Pin == RT_PIN_Pin)
 	{
-		if(HAL_GPIO_ReadPin(RT_PIN_GPIO_Port, RT_PIN_Pin) == GPIO_PIN_SET)
-		{
-			HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
-			msg[msg_counter] = 1; // wrtite '1' to msg[]
-			msg_counter++; //move to another cell for next state of pin
-		}
-		else
-		{
-			HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
-			msg[msg_counter] = 0; // write '1' to msg[]
-			msg_counter++; //move to another cell for next state of pin
-
-		}
+		Check_State_Of_Pin();
 	}
+
 }
 /* USER CODE BEGIN PFP */
 
@@ -137,6 +117,32 @@ int main(void)
   * @brief System Clock Configuration
   * @retval None
   */
+void Check_State_Of_Pin() // check state and write 1 or 0 to msg[]
+{
+
+
+	if(msg_counter == 32) // end of msg[], time to reset msg_counter
+	{
+		msg_counter =0;
+	}
+	else
+	{
+		if(HAL_GPIO_ReadPin(RT_PIN_GPIO_Port, RT_PIN_Pin) == GPIO_PIN_SET)
+		{
+			HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
+			msg[msg_counter] = 1; // wrtite '1' to msg[]
+			msg_counter++; //move to another cell for next state of pin
+		}
+		else
+		{
+			HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
+			msg[msg_counter] = 0; // write '0' to msg[]
+			msg_counter++; //move to another cell for next state of pin
+
+		}
+	}
+
+}
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -195,7 +201,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : RT_PIN_Pin */
   GPIO_InitStruct.Pin = RT_PIN_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(RT_PIN_GPIO_Port, &GPIO_InitStruct);
 

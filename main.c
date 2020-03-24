@@ -62,17 +62,32 @@ static void MX_CRC_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+enum recieve_state_machine { // states of recieving data
+		NO_RECIEVE,
+		RECIEVING,
+		RECIEVING_ENDED
+
+}typedef recieve_state;
+
+recieve_state Recieve_state = NO_RECIEVE;
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
- if(htim->Instance == TIM10){ // Interrupt from TIMER10
-	 HAL_GPIO_TogglePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin);
- }
+
+	if(htim->Instance == TIM10)// Interrupt from TIMER10
+	{
+		if(Recieve_state ==  RECIEVING) // if enum machine is in recieving state
+		{
+			HAL_GPIO_TogglePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin);
+		}
+
+	}
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) // interrupt from high RT_PIN
 {
 	if(GPIO_Pin == RT_PIN_Pin)
 	{
+		Recieve_state = RECIEVING;// start recieving data
 		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
 	}
 }

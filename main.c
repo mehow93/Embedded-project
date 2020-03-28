@@ -43,8 +43,10 @@
 
 /* Private variables ---------------------------------------------------------*/
 CRC_HandleTypeDef hcrc;
-
 TIM_HandleTypeDef htim10;
+
+uint8_t msg_cnt =0;// counter to go throw msg[]
+uint8_t msg[33]; // to store RT_PIN states
 
 /* USER CODE BEGIN PV */
 
@@ -62,6 +64,7 @@ static void MX_CRC_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void Read_Pin_Status();
 enum recieve_state_machine { // states of recieving data
 		NO_RECIEVE,
 		RECIEVING,
@@ -72,12 +75,11 @@ enum recieve_state_machine { // states of recieving data
 recieve_state Recieve_state = NO_RECIEVE;
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-
 	if(htim->Instance == TIM10)// Interrupt from TIMER10
 	{
 		if(Recieve_state ==  RECIEVING) // if enum machine is in recieving state
 		{
-			HAL_GPIO_TogglePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin);
+			Read_Pin_Status(); // start reading states
 		}
 
 	}
@@ -85,13 +87,38 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) // interrupt from high RT_PIN
 {
-	if(GPIO_Pin == RT_PIN_Pin)
+	if(GPIO_Pin == RT_PIN_Pin && Recieve_state == NO_RECIEVE)
 	{
+
 		Recieve_state = RECIEVING;// start recieving data
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
+
 	}
 }
+void Read_Pin_Status() // read status of RT_PIN
+{
 
+	if(msg_cnt == 34)
+	{
+		msg_cnt = 0; // reset counter after it reaches end of msg[]
+		Recieve_state = NO_RECIEVE;
+	}
+	else
+	{
+		if(HAL_GPIO_ReadPin(RT_PIN_GPIO_Port, RT_PIN_Pin) == GPIO_PIN_SET) // if pin state is high
+		{
+			msg[msg_cnt] = 1; // high state
+			msg_cnt++; // move to next cell
+			HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_13);
+		}
+		else if // pin state is low
+		{
+			msg[msg_cnt] = 0; // high state
+			msg_cnt++; // move to next cell
+			HAL_GPIO_TogglePin(GPIOD, LED_GREEN_Pin);
+		}
+	}
+
+}
 /* USER CODE END 0 */
 
 /**
@@ -144,6 +171,8 @@ int main(void)
   * @brief System Clock Configuration
   * @retval None
   */
+
+
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};

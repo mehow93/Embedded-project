@@ -20,7 +20,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
+#include <math.h>
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -47,7 +47,15 @@ TIM_HandleTypeDef htim10;
 
 uint8_t msg_cnt =0;// counter to go throw msg[]
 uint8_t msg[33]; // to store RT_PIN states
+uint8_t ready_msg[4]; // to store ready chars
 
+uint8_t first_char = 0;
+uint8_t second_char = 0;
+uint8_t third_char = 0;
+uint8_t fourth_char = 0;
+
+
+uint8_t * binary_data_start = &msg[1];
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -64,11 +72,14 @@ static void MX_CRC_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void Read_Pin_Status();
+void Read_Pin_Status(); // read states of RT_PIN
+uint8_t Binary_Into_Int(uint8_t* ptr); // change binary data to int
+void Decode();// change data in msg[] to decimal value
+
 enum recieve_state_machine { // states of recieving data
 		NO_RECIEVE,
 		RECIEVING,
-		RECIEVING_ENDED
+		CHECKING
 
 }typedef recieve_state;
 
@@ -100,7 +111,7 @@ void Read_Pin_Status() // read status of RT_PIN
 	if(msg_cnt == 34)
 	{
 		msg_cnt = 0; // reset counter after it reaches end of msg[]
-		Recieve_state = NO_RECIEVE;
+		Recieve_state = CHECKING;
 	}
 	else
 	{
@@ -110,13 +121,55 @@ void Read_Pin_Status() // read status of RT_PIN
 			msg_cnt++; // move to next cell
 			HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_13);
 		}
-		else if // pin state is low
+		else  // pin state is low
 		{
 			msg[msg_cnt] = 0; // high state
 			msg_cnt++; // move to next cell
 			HAL_GPIO_TogglePin(GPIOD, LED_GREEN_Pin);
 		}
 	}
+
+}
+uint8_t Binary_Into_Int(uint8_t* ptr)
+{
+	int i;
+	int result=0;
+	int exponent=7;
+	for(i=0;i<8;i++)
+	{
+		if((*ptr) == 1)
+		{
+			result += pow(2,exponent);
+		}
+		else
+		{
+			//do nothing
+		}
+		ptr--;
+		exponent--;
+
+	}
+	return result;
+}
+void Decode()// change data in msg[] to decimal value
+{
+	uint8_t ready_msg_counter =0; // counter to go throw rready_msg[]
+	ready_msg[ready_msg_counter] = Binary_Into_Int(binary_data_start); // decode first char
+	ready_msg_counter ++; // move to next cell for new char
+	binary_data_start++; // move to next start of binary data
+
+	ready_msg[ready_msg_counter] = Binary_Into_Int(binary_data_start); // decode second char
+	ready_msg_counter ++; // move to next cell for new char
+	binary_data_start++; // move to next start of binary data
+
+	ready_msg[ready_msg_counter] = Binary_Into_Int(binary_data_start); // decode third char
+	ready_msg_counter ++; // move to next cell for new char
+	binary_data_start++; // move to next start of binary data
+
+	ready_msg[ready_msg_counter] = Binary_Into_Int(binary_data_start); // decode fourth char
+
+
+
 
 }
 /* USER CODE END 0 */
@@ -160,6 +213,15 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  if(Recieve_state == CHECKING)
+	  {
+		  Decode();
+		  first_char = ready_msg[0];
+		  second_char = ready_msg[1];
+		  third_char = ready_msg[2];
+		  fourth_char = ready_msg[3];
+		  Recieve_state = NO_RECIEVE;
+	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

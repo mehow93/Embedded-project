@@ -97,17 +97,9 @@ uint8_t check_second_char=0; // to check if char was correctly change to binary 
 uint8_t check_third_char=0; // to check if char was correctly change to binary value
 uint8_t check_fourth_char=0; // to check if char was correctly change to binary value
 
-
-/* USER CODE END PV */
-
-/* Private function prototypes -----------------------------------------------*/
-void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
-static void MX_TIM10_Init(void);
-static void MX_CRC_Init(void);
 void Send_To_Pin(uint8_t state); // change '0' and '1' to high and low states
 void Send_Message(void); // send message
-uint8_t Decimal_To_Binary(uint8_t value); // change decimal to binary
+uint8_t Get_Lowest_Bit(uint8_t value); // get lowest bit from value
 uint8_t Char_To_Decimal(char arg); // change char into decimal value
 void Build_Message(void); // build message ready to sent
 void Check_Chars(void); // check correctness of binary order of  sending chars
@@ -133,11 +125,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)// interrupt from tim
 	 			msg_counter =0; // restart reading from send_buffer[]
 	 			state = CHECKING_CHARS; // set state machine to checking chars
 	 			msg_counter =0; //reset
-	 			sending_state = SETTING_START_BIT; // back to first stae
+	 			sending_state = SETTING_START_BIT; // back to first state
 	 		}
 	 		else //start decoding
 	 		{
-	 			uint8_t result = Decimal_To_Binary(send_buffer[msg_counter]); //send first char to masking
+	 			uint8_t result = Get_Lowest_Bit(send_buffer[msg_counter]); //send first char to masking
 	 			Send_To_Pin(result); // changes state of pin
 	 			send_buffer[msg_counter] = send_buffer[msg_counter] >> bit_shift;// shift char by one bit
 	 			shift_counter++; // add one shift
@@ -173,6 +165,79 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)// interrupt from button
 		state = TRANSMITTING; // enable transmitting
 	}
 }
+
+void Send_Message(void)
+{
+
+	size = sprintf(send_buffer, "TEST");// to know how many chars are in send_buffer
+	test_zero=send_buffer[0];
+	test_one=send_buffer[1];
+	test_two=send_buffer[2];
+	test_three=send_buffer[3];
+
+	state = SENDING_TO_PIN; // start Send_To_Pin() in timer10 interrupt
+
+}
+void Send_To_Pin(uint8_t state)
+{
+
+	if (state == 0) // if field of array equals to '0' set state of pin to low
+	{
+		HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_RESET);
+	}
+	else // if field of array equals to  '1' set state of pin to high
+	{
+		HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_SET);
+	}
+
+}
+
+uint8_t Get_Lowest_Bit(uint8_t value)
+{
+	return(value & 0x01);
+}
+
+
+uint8_t Binary_Into_Int(uint8_t* ptr)
+{
+	int i;
+	int result=0;
+	int exponent=7;
+	for(i=0;i<8;i++)
+	{
+		if((*ptr) == 1)
+		{
+			result += pow(2,exponent);
+		}
+		else
+		{
+			//do nothing
+		}
+		ptr--;
+		exponent--;
+
+	}
+	return result;
+}
+
+void Check_Chars(void)
+{
+	check_first_char = Binary_Into_Int(start_of_first_char);
+	check_second_char = Binary_Into_Int(start_of_second_char);
+	check_third_char = Binary_Into_Int(start_of_third_char);
+	check_fourth_char = Binary_Into_Int(start_of_fourth_char);
+
+	state = NO_TRANSMITTING; // end transmittion
+	check_tab_counter=0;
+}
+/* USER CODE END PV */
+
+/* Private function prototypes -----------------------------------------------*/
+void SystemClock_Config(void);
+static void MX_GPIO_Init(void);
+static void MX_TIM10_Init(void);
+static void MX_CRC_Init(void);
+
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -250,70 +315,7 @@ int main(void)
   * @brief System Clock Configuration
   * @retval None
   */
-void Send_Message(void)
-{
 
-	size = sprintf(send_buffer, "TEST");// to know how many chars are in send_buffer
-	test_zero=send_buffer[0];
-	test_one=send_buffer[1];
-	test_two=send_buffer[2];
-	test_three=send_buffer[3];
-
-	state = SENDING_TO_PIN; // start Send_To_Pin() in timer10 interrupt
-
-}
-void Send_To_Pin(uint8_t state)
-{
-
-	if (state == 0) // if field of array equals to '0' set state of pin to low
-	{
-		HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_RESET);
-	}
-	else // if field of array equals to  '1' set state of pin to high
-	{
-		HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_SET);
-	}
-
-}
-
-uint8_t Decimal_To_Binary(uint8_t value)
-{
-	return(value & 0x01);
-}
-
-
-uint8_t Binary_Into_Int(uint8_t* ptr)
-{
-	int i;
-	int result=0;
-	int exponent=7;
-	for(i=0;i<8;i++)
-	{
-		if((*ptr) == 1)
-		{
-			result += pow(2,exponent);
-		}
-		else
-		{
-			//do nothing
-		}
-		ptr--;
-		exponent--;
-
-	}
-	return result;
-}
-
-void Check_Chars(void)
-{
-	check_first_char = Binary_Into_Int(start_of_first_char);
-	check_second_char = Binary_Into_Int(start_of_second_char);
-	check_third_char = Binary_Into_Int(start_of_third_char);
-	check_fourth_char = Binary_Into_Int(start_of_fourth_char);
-
-	state = NO_TRANSMITTING; // end transmittion
-	check_tab_counter=0;
-}
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};

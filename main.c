@@ -50,6 +50,7 @@ CRC_HandleTypeDef hcrc;
 TIM_HandleTypeDef htim10;
 
 /* USER CODE BEGIN PV */
+//test
 uint8_t check_tab_counter = 0; // counter to set go throw check[]
 uint8_t send_buffer[4]; // to hold input string
 uint8_t binary_data[8]; // buffer to hold values is binary order

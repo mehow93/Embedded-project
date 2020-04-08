@@ -57,10 +57,10 @@ uint8_t binary_data[8]; // buffer to hold values is binary order
 uint8_t check[32];
 uint8_t size;
 uint8_t decimal_code;
-uint8_t* start_of_first_char = &check[7]; // save address of start of binary order of first char
-uint8_t* start_of_second_char = &check[15]; // save address of start of binary order of second char
-uint8_t* start_of_third_char = &check[23]; // save address of start of binary order of third char
-uint8_t* start_of_fourth_char = &check[31]; // save address of start of binary order of fourth char
+uint8_t* start_of_first_char = &check[31]; // save address of start of binary order of first char
+uint8_t* start_of_second_char = &check[23]; // save address of start of binary order of second char
+uint8_t* start_of_third_char = &check[15]; // save address of start of binary order of third char
+uint8_t* start_of_fourth_char = &check[7]; // save address of start of binary order of fourth char
 
 enum state_machine
 {
@@ -82,7 +82,7 @@ state_of_transmition state = NO_TRANSMITTING;
 sending_state_machine sending_state  = SETTING_START_BIT;
 // this to variables later make as static local variables in HAL_TIM_PeriodElapsedCallback()
 uint8_t shift_counter = 0; // check how many shifts were made
-uint8_t msg_counter = 0; // to choose char from message[]
+int8_t msg_counter = 3; // to choose char from message[]
 //delate later
 uint8_t test_zero;
 uint8_t test_one;
@@ -122,7 +122,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)// interrupt from tim
 	 		else if (sending_state == SETTING_END_BIT) // this is end of transmiiting - set Low state
 	 		{
 	 			HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_RESET);
-	 			msg_counter =0; // restart reading from send_buffer[]
+	 			msg_counter =3; // restart reading from send_buffer[]
 	 			state = CHECKING_CHARS; // set state machine to checking chars
 	 			msg_counter =0; //reset
 	 			sending_state = SETTING_START_BIT; // back to first state
@@ -138,16 +138,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)// interrupt from tim
 				if(shift_counter == 8) // if one char is whole masked and send to pin
 				{
 					shift_counter =0;// reset shift counter
-					msg_counter++; // move to next char in message[]
+					msg_counter--; // move to next char in message[]
 				}
 				else
 				{
 					//do nothing
 				}
-				if(msg_counter == 4)
+				if(msg_counter == -1)
 				{
 					sending_state = SETTING_END_BIT; // enable end of transmition
-					msg_counter =0;
+					msg_counter =3;
 				}
 				else
 				{
@@ -169,7 +169,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)// interrupt from button
 void Send_Message(void)
 {
 
-	size = sprintf(send_buffer, "TEST");// to know how many chars are in send_buffer
+	size = sprintf(send_buffer, "ABCD");// to know how many chars are in send_buffer
 	test_zero=send_buffer[0];
 	test_one=send_buffer[1];
 	test_two=send_buffer[2];

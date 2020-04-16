@@ -20,7 +20,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include <math.h>
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -43,6 +43,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 CRC_HandleTypeDef hcrc;
+
 TIM_HandleTypeDef htim10;
 enum recieve_state_machine { // states of recieving data
 		NO_RECIEVE,
@@ -51,7 +52,6 @@ enum recieve_state_machine { // states of recieving data
 
 }typedef recieve_state;
 recieve_state Recieve_state = NO_RECIEVE;
-
 uint8_t msg_cnt =0;// counter to go throw msg[]
 uint8_t msg[33]; // to store RT_PIN states
 uint8_t ready_msg[4]; // to store ready chars
@@ -68,7 +68,6 @@ uint8_t * binary_data_start = &msg[8];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
-
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM10_Init(void);
@@ -78,14 +77,9 @@ static void MX_CRC_Init(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
 void Read_Pin_Status(); // read states of RT_PIN
 uint8_t Binary_Into_Int(uint8_t* ptr); // change binary data to int
 void Decode();// change data in msg[] to decimal value
-
-
-
-
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim->Instance == TIM10)// Interrupt from TIMER10
@@ -97,7 +91,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 	}
 }
-
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) // interrupt from high RT_PIN
 {
 	if(GPIO_Pin == RT_PIN_Pin && Recieve_state == NO_RECIEVE)
@@ -107,6 +100,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) // interrupt from high RT_PIN
 
 	}
 }
+
 void Read_Pin_Status() // read status of RT_PIN
 {
 
@@ -155,6 +149,7 @@ uint8_t Binary_Into_Int(uint8_t* ptr)
 }
 void Decode()// change data in msg[] to decimal value
 {
+
 	uint8_t ready_msg_counter =3; // counter to go throw ready_msg[]
 	ready_msg[ready_msg_counter] = Binary_Into_Int(binary_data_start); // decode first char
 	ready_msg_counter --; // move to next cell for new char
@@ -169,11 +164,12 @@ void Decode()// change data in msg[] to decimal value
 	binary_data_start +=8; // move to next start of binary data
 
 	ready_msg[ready_msg_counter] = Binary_Into_Int(binary_data_start); // decode fourth char
-
-
-
+	binary_data_start = &msg[8]; // back to first char
 
 }
+
+/* USER CODE BEGIN 0 */
+
 /* USER CODE END 0 */
 
 /**
@@ -215,19 +211,19 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
 	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
-	 if(Recieve_state == CHECKING)
-	  {
+		 if(Recieve_state == CHECKING)
+		  {
 
-		  Decode();
-		  first_char = ready_msg[0];
-		  second_char = ready_msg[1];
-		  third_char = ready_msg[2];
-		  fourth_char = ready_msg[3];
-		  Recieve_state = NO_RECIEVE;
+			  Decode();
 
-	  }
+			  first_char = ready_msg[0];
+			  second_char = ready_msg[1];
+			  third_char = ready_msg[2];
+			  fourth_char = ready_msg[3];
+			  Recieve_state = NO_RECIEVE;
+
+		  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -239,8 +235,6 @@ int main(void)
   * @brief System Clock Configuration
   * @retval None
   */
-
-
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -323,7 +317,7 @@ static void MX_TIM10_Init(void)
   htim10.Instance = TIM10;
   htim10.Init.Prescaler = 9999;
   htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim10.Init.Period = 9998;
+  htim10.Init.Period = 9;
   htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim10) != HAL_OK)

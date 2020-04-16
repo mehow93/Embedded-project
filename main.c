@@ -124,7 +124,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)// interrupt from tim
 	 			HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_RESET);
 	 			msg_counter =3; // restart reading from send_buffer[]
 	 			state = CHECKING_CHARS; // set state machine to checking chars
-	 			msg_counter =0; //reset
+
 	 			sending_state = SETTING_START_BIT; // back to first state
 	 		}
 	 		else //start decoding
@@ -147,7 +147,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)// interrupt from tim
 				if(msg_counter == -1)
 				{
 					sending_state = SETTING_END_BIT; // enable end of transmition
-					msg_counter =3;
+
 				}
 				else
 				{
@@ -169,7 +169,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)// interrupt from button
 void Send_Message(void)
 {
 
-	size = sprintf(send_buffer, "ABCD");// to know how many chars are in send_buffer
+	size = sprintf(send_buffer, "TEST");// to know how many chars are in send_buffer
 	test_zero=send_buffer[0];
 	test_one=send_buffer[1];
 	test_two=send_buffer[2];
@@ -398,7 +398,7 @@ static void MX_TIM10_Init(void)
   htim10.Instance = TIM10;
   htim10.Init.Prescaler = 9999;
   htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim10.Init.Period = 9998;
+  htim10.Init.Period = 9;
   htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim10) != HAL_OK)

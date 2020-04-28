@@ -53,7 +53,7 @@ enum recieve_state_machine { // states of recieving data
 }typedef recieve_state;
 recieve_state Recieve_state = NO_RECIEVE;
 uint8_t msg_cnt =0;// counter to go throw msg[]
-uint8_t msg[33]; // to store RT_PIN states
+uint8_t msg[39]; // to store RT_PIN states
 uint8_t ready_msg[4]; // to store ready chars
 
 uint8_t first_char = 0;
@@ -104,7 +104,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) // interrupt from high RT_PIN
 void Read_Pin_Status() // read status of RT_PIN
 {
 
-	if(msg_cnt == 33)
+	if(msg_cnt == 39)
 	{
 		msg_cnt = 0; // reset counter after it reaches end of msg[]
 		Recieve_state = CHECKING;
@@ -153,15 +153,15 @@ void Decode()// change data in msg[] to decimal value
 	uint8_t ready_msg_counter =3; // counter to go throw ready_msg[]
 	ready_msg[ready_msg_counter] = Binary_Into_Int(binary_data_start); // decode first char
 	ready_msg_counter --; // move to next cell for new char
-	binary_data_start += 8; // move to next start of binary data
+	binary_data_start += 10; // move to next start of binary data
 
 	ready_msg[ready_msg_counter] = Binary_Into_Int(binary_data_start); // decode second char
 	ready_msg_counter --; // move to next cell for new char
-	binary_data_start += 8; // move to next start of binary data
+	binary_data_start += 10; // move to next start of binary data
 
 	ready_msg[ready_msg_counter] = Binary_Into_Int(binary_data_start); // decode third char
 	ready_msg_counter --; // move to next cell for new char
-	binary_data_start +=8; // move to next start of binary data
+	binary_data_start +=10; // move to next start of binary data
 
 	ready_msg[ready_msg_counter] = Binary_Into_Int(binary_data_start); // decode fourth char
 	binary_data_start = &msg[8]; // back to first char
@@ -317,7 +317,7 @@ static void MX_TIM10_Init(void)
   htim10.Instance = TIM10;
   htim10.Init.Prescaler = 9999;
   htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim10.Init.Period = 9;
+  htim10.Init.Period = 99;
   htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim10) != HAL_OK)

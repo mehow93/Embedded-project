@@ -54,7 +54,7 @@ TIM_HandleTypeDef htim10;
 uint8_t check_tab_counter = 0; // counter to set go throw check[]
 uint8_t send_buffer[4]; // to hold input string
 uint8_t binary_data[8]; // buffer to hold values is binary order
-uint8_t check[32];
+uint8_t check[32];//state = CHECKING_CHARS; // set state machine to checking chars];
 uint8_t size;
 uint8_t decimal_code;
 uint8_t* start_of_first_char = &check[31]; // save address of start of binary order of first char
@@ -78,7 +78,7 @@ enum sending_state_machine
 	SETTING_END_BIT
 }typedef sending_state_machine;
 
-state_of_transmition state = NO_TRANSMITTING;
+state_of_transmition state = TRANSMITTING;
 sending_state_machine sending_state  = SETTING_START_BIT;
 // this to variables later make as static local variables in HAL_TIM_PeriodElapsedCallback()
 uint8_t shift_counter = 0; // check how many shifts were made
@@ -122,8 +122,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)// interrupt from tim
 	 		else if (sending_state == SETTING_END_BIT) // this is end of transmiiting - set Low state
 	 		{
 	 			HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_RESET);
-	 			msg_counter =3; // restart reading from send_buffer[]
-	 			state = CHECKING_CHARS; // set state machine to checking chars
+
+
 
 	 			sending_state = SETTING_START_BIT; // back to first state
 	 		}
@@ -138,7 +138,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)// interrupt from tim
 				if(shift_counter == 8) // if one char is whole masked and send to pin
 				{
 					shift_counter =0;// reset shift counter
-					msg_counter--; // move to next char in message[]
+					msg_counter--; // // move to next char in message[]
+					sending_state = SETTING_END_BIT; // enable end of transmition
 				}
 				else
 				{
@@ -146,8 +147,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)// interrupt from tim
 				}
 				if(msg_counter == -1)
 				{
-					sending_state = SETTING_END_BIT; // enable end of transmition
-
+					msg_counter = 3;
+					state = CHECKING_CHARS; // set state machine to checking chars
 				}
 				else
 				{
@@ -158,13 +159,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)// interrupt from tim
 	 	}
  	 }
 }
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)// interrupt from button
+/*void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)// interrupt from button
 {
 	if(state == NO_TRANSMITTING) // prevoius transmition must be ended
 	{
 		state = TRANSMITTING; // enable transmitting
 	}
-}
+}*/
 
 void Send_Message(void)
 {
@@ -227,7 +228,7 @@ void Check_Chars(void)
 	check_third_char = Binary_Into_Int(start_of_third_char);
 	check_fourth_char = Binary_Into_Int(start_of_fourth_char);
 
-	state = NO_TRANSMITTING; // end transmittion
+	state = TRANSMITTING; // end transmittion
 	check_tab_counter=0;
 }
 /* USER CODE END PV */
@@ -398,7 +399,7 @@ static void MX_TIM10_Init(void)
   htim10.Instance = TIM10;
   htim10.Init.Prescaler = 9999;
   htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim10.Init.Period = 9;
+  htim10.Init.Period = 99;
   htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim10) != HAL_OK)

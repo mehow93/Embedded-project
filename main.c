@@ -53,12 +53,11 @@ enum recieve_state_machine
 
 }typedef recieve_state_type;
 recieve_state_type recieve_state = IDLE;
-uint8_t msg_cnt = 3;// counter to go throw msg[]
+int8_t msg_cnt = 3;// counter to go throw msg[]
 uint8_t bit_cnt = 0;// counter to
-uint8_t msg[39]; // to store RT_PIN states
 uint8_t ready_msg[4]; // to store ready chars
-uint8_t bit_shift = 0; // to move one state of pin
-uint8_t result = 0x00; // to store char
+uint8_t bit_position = 0; // to move single state of pin
+uint16_t result = 0x00; // to store char
 
 uint8_t first_char = 0; // variables to check correctness of decoding. To delete later
 uint8_t second_char = 0;
@@ -102,65 +101,24 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) // interrupt from high RT_PIN
 void Read_Pin_Status() // read status of RT_PIN
 {
 
-	if(bit_cnt == 9)
+	uint16_t single_state = (HAL_GPIO_ReadPin(RT_PIN_GPIO_Port, RT_PIN_Pin) == GPIO_PIN_SET ? 1:0); // write 1 if pin state is high, and 0 if it is low.
+	single_state = single_state << bit_position; // set this bit to right place in big-endian order
+	result = result | single_state; // write single bit to result
+	bit_position++; // encounter bit_position to correct write next bit state
+
+    if(bit_position == 9) // when whole char is received and start bit too
 	{
-
-		recieve_state = CHECKING;
-		bit_cnt = 0;
+		result = result >> 1; // get rid of start bit
+		ready_msg[msg_cnt] = result; // write ready char to msg[]
+		bit_position = 0; // reset bit_position
+		msg_cnt --; // move to next cell in msg[]
+		result = 0; // prepare result to receive next char
+		recieve_state = IDLE; // go to IDLE state
 	}
-	else
-	{
-
-		uint8_t one_state = HAL_GPIO_ReadPin(RT_PIN_GPIO_Port, RT_PIN_Pin) == GPIO_PIN_SET ? 1:0; // write 1 if pin state is high, and 0 if it is low.
-		one_state = one_state << bit_shift; // set bit in right place
-		result = result | one_state; // add bit to whole char
-		bit_shift++;
-		if(bit_shift == 7) // if whole char is received
-		{
-			ready_msg[msg_cnt] = result;
-			bit_shift = 0; // set bit_shift to lowest bit
-			msg_cnt --; // go to next cell in ready_msg[]
-			result = 0x00; // reset result to delete later
-		}
-		bit_cnt++ ; //count every bit
-	}
-
 }
-uint8_t Binary_Into_Int(uint8_t* single_state)
-{
-	uint8_t result = 0;
-	uint8_t bit = 0; // to store single bit
-	uint8_t bit_mask = 0x01; // bit mask to get exactly one bit
 
-    for(uint8_t current_bit = 0; current_bit < 8; current_bit ++) //loop iterates 8 times (one iterate per one bit)
-    {
-      //  bit = x & bit_mask; // get single bit
-        result = result | bit; // write bit to result
-        bit_mask = bit_mask << 1; // move to 9next bit
-    }
 
-}
-void Decode()// change data in msg[] to decimal value
-{
 
-	uint8_t* binary_data_start = &msg[8]; // start binary data of first char
-	uint8_t ready_msg_counter =3; // counter to go throw ready_msg[]
-	ready_msg[ready_msg_counter] = Binary_Into_Int(binary_data_start); // decode first char
-	ready_msg_counter --; // move to next cell for new char
-	binary_data_start += 10; // move to next start of binary data
-
-	ready_msg[ready_msg_counter] = Binary_Into_Int(binary_data_start); // decode second char
-	ready_msg_counter --; // move to next cell for new char
-	binary_data_start += 10; // move to next start of binary data
-
-	ready_msg[ready_msg_counter] = Binary_Into_Int(binary_data_start); // decode third char
-	ready_msg_counter --; // move to next cell for new char
-	binary_data_start +=10; // move to next start of binary data
-
-	ready_msg[ready_msg_counter] = Binary_Into_Int(binary_data_start); // decode fourth char
-	binary_data_start = &msg[8]; // back to first char
-
-}
 
 /* USER CODE BEGIN 0 */
 
@@ -205,15 +163,17 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
-		 if(recieve_state == CHECKING)
+	  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_13);
+		 if(msg_cnt == -1)
 		  {
 			  first_char = ready_msg[0];
 			  second_char = ready_msg[1];
 			  third_char = ready_msg[2];
 			  fourth_char = ready_msg[3];
+			  msg_cnt = 3;
 			  recieve_state = IDLE;
-			  msg_cnt = 3; // set to last cell
+
+
 
 		  }
     /* USER CODE END WHILE */
@@ -309,7 +269,7 @@ static void MX_TIM10_Init(void)
   htim10.Instance = TIM10;
   htim10.Init.Prescaler = 9999;
   htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim10.Init.Period = 154;
+  htim10.Init.Period = 9;
   htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim10) != HAL_OK)

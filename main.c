@@ -46,10 +46,9 @@ CRC_HandleTypeDef hcrc;
 
 TIM_HandleTypeDef htim10;
 enum recieve_state_machine
-{ // states of receiving data
+{      // states of receiving data
 		IDLE,
 		RECEIVING,
-		CHECKING
 
 }typedef recieve_state_type;
 recieve_state_type recieve_state = IDLE;
@@ -81,8 +80,6 @@ static void MX_CRC_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 void Read_Pin_Status(); // read states of RT_PIN
-uint8_t Binary_Into_Int(uint8_t* ptr); // change binary data to int type
-void Decode();// change data in msg[] to decimal value
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if((htim->Instance == TIM10) && (recieve_state ==  RECEIVING)) // Interrupt from TIMER10 and enum machine is in receiving state
@@ -109,9 +106,9 @@ void Read_Pin_Status() // read status of RT_PIN
     if(bit_position == 9) // when whole char is received and start bit too
 	{
 		result = result >> 1; // get rid of start bit
-		ready_msg[msg_cnt] = result; // write ready char to msg[]
+		ready_msg[msg_cnt] = (uint8_t)result; // write ready char to msg[]
 		bit_position = 0; // reset bit_position
-		msg_cnt --; // move to next cell in msg[]
+		msg_cnt--; // move to next cell in msg[]
 		result = 0; // prepare result to receive next char
 		recieve_state = IDLE; // go to IDLE state
 	}
@@ -172,9 +169,6 @@ int main(void)
 			  fourth_char = ready_msg[3];
 			  msg_cnt = 3;
 			  recieve_state = IDLE;
-
-
-
 		  }
     /* USER CODE END WHILE */
 
@@ -269,7 +263,7 @@ static void MX_TIM10_Init(void)
   htim10.Instance = TIM10;
   htim10.Init.Prescaler = 9999;
   htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim10.Init.Period = 9;
+  htim10.Init.Period = 154;
   htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim10) != HAL_OK)

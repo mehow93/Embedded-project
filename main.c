@@ -21,7 +21,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include <string.h>
-#include <math.h>
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -35,8 +35,8 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-#define MESSAGE_LENGTH 6
-
+#define MESSAGE_LENGTH 4
+#define FIRST_CHAR_TO_SEND 3
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -50,82 +50,58 @@ CRC_HandleTypeDef hcrc;
 TIM_HandleTypeDef htim10;
 
 /* USER CODE BEGIN PV */
-//test
-uint8_t check_tab_counter = 0; // counter to set go throw check[]
-uint8_t send_buffer[4]; // to hold input string
-uint8_t binary_data[8]; // buffer to hold values is binary order
-uint8_t check[32];//state = CHECKING_CHARS; // set state machine to checking chars];
-uint8_t size;
-uint8_t decimal_code;
-uint8_t* start_of_first_char = &check[31]; // save address of start of binary order of first char
-uint8_t* start_of_second_char = &check[23]; // save address of start of binary order of second char
-uint8_t* start_of_third_char = &check[15]; // save address of start of binary order of third char
-uint8_t* start_of_fourth_char = &check[7]; // save address of start of binary order of fourth char
+uint8_t send_buffer[MESSAGE_LENGTH]; // to hold input string
+uint8_t size; // size of send_buffer[]
 
 enum state_machine
 {
+	IDLE,
 	TRANSMITTING,
-	NO_TRANSMITTING,
 	SENDING_TO_PIN,
 	CHECKING_CHARS,
 
 
-}typedef state_of_transmition; // state machine to control transmittion
+}typedef state_of_transmition_type; // state machine to control transmittion
+
 enum sending_state_machine
 {
 	SETTING_START_BIT,
 	DECODING,
 	SETTING_END_BIT
-}typedef sending_state_machine;
+}typedef sending_state_machine_type;
 
-state_of_transmition state = TRANSMITTING;
-sending_state_machine sending_state  = SETTING_START_BIT;
+state_of_transmition_type state_of_transmition = TRANSMITTING;
+sending_state_machine_type state_of_sending  = SETTING_START_BIT;
+
 // this to variables later make as static local variables in HAL_TIM_PeriodElapsedCallback()
 uint8_t shift_counter = 0; // check how many shifts were made
-int8_t msg_counter = 3; // to choose char from message[]
-//delate later
+int8_t msg_counter = FIRST_CHAR_TO_SEND; // to choose char from message[]
+//delete later
 uint8_t test_zero;
 uint8_t test_one;
 uint8_t test_two;
 uint8_t test_three;
 uint8_t test_four;
-uint8_t test_five;
-uint8_t test_six;
-uint8_t test_seven;
-uint8_t check_first_char=0; // to check if char was correctly change to binary value
-uint8_t check_second_char=0; // to check if char was correctly change to binary value
-uint8_t check_third_char=0; // to check if char was correctly change to binary value
-uint8_t check_fourth_char=0; // to check if char was correctly change to binary value
+
 
 void Send_To_Pin(uint8_t state); // change '0' and '1' to high and low states
 void Send_Message(void); // send message
 uint8_t Get_Lowest_Bit(uint8_t value); // get lowest bit from value
-uint8_t Char_To_Decimal(char arg); // change char into decimal value
-void Build_Message(void); // build message ready to sent
-void Check_Chars(void); // check correctness of binary order of  sending chars
-uint8_t Binary_Into_Int(uint8_t* ptr); // change binary_data [] to uint value
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)// interrupt from timer
 {
-
 	uint8_t bit_shift = 0x01; // shift 1 bit
-
-	if(htim->Instance == TIM10)// if interrupt from timer10 occurs
+	if(htim->Instance == TIM10 && state_of_transmition == SENDING_TO_PIN)// if interrupt from timer10 occurs and state machine is ready
  	{
 
-	 	if(state == SENDING_TO_PIN)
-	 	{
-	 		if(sending_state == SETTING_START_BIT) // this is start of transmitting
+	 		if(state_of_sending == SETTING_START_BIT) // this is start of transmitting
 	 		{
 	 			HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_SET);
-	 			sending_state = DECODING;
+	 			state_of_sending = DECODING;
 	 		}
-	 		else if (sending_state == SETTING_END_BIT) // this is end of transmiiting - set Low state
+	 		else if (state_of_sending == SETTING_END_BIT) // this is end of transmiiting - set Low state
 	 		{
 	 			HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_RESET);
-
-
-
-	 			sending_state = SETTING_START_BIT; // back to first state
+	 			state_of_sending = SETTING_START_BIT; // back to first state
 	 		}
 	 		else //start decoding
 	 		{
@@ -133,39 +109,24 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)// interrupt from tim
 	 			Send_To_Pin(result); // changes state of pin
 	 			send_buffer[msg_counter] = send_buffer[msg_counter] >> bit_shift;// shift char by one bit
 	 			shift_counter++; // add one shift
-	 			check[check_tab_counter] = result;
-	 			check_tab_counter++;
+
 				if(shift_counter == 8) // if one char is whole masked and send to pin
 				{
-					shift_counter =0;// reset shift counter
+					shift_counter = 0;// reset shift counter
 					msg_counter--; // // move to next char in message[]
-					sending_state = SETTING_END_BIT; // enable end of transmition
+					state_of_sending = SETTING_END_BIT; // enable end of transmition
 				}
-				else
-				{
-					//do nothing
-				}
+
 				if(msg_counter == -1)
 				{
-					msg_counter = 3;
-					state = TRANSMITTING; // set state machine to checking chars
-				}
-				else
-				{
-					// do nothing
+					msg_counter = FIRST_CHAR_TO_SEND;
+					state_of_transmition = TRANSMITTING; // set state machine to checking chars
 				}
 
 	 		}
-	 	}
  	 }
 }
-/*void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)// interrupt from button
-{
-	if(state == NO_TRANSMITTING) // prevoius transmition must be ended
-	{
-		state = TRANSMITTING; // enable transmitting
-	}
-}*/
+
 
 void Send_Message(void)
 {
@@ -176,7 +137,7 @@ void Send_Message(void)
 	test_two=send_buffer[2];
 	test_three=send_buffer[3];
 
-	state = SENDING_TO_PIN; // start Send_To_Pin() in timer10 interrupt
+	state_of_transmition = SENDING_TO_PIN; // start Send_To_Pin() in timer10 interrupt
 
 }
 void Send_To_Pin(uint8_t state)
@@ -199,38 +160,8 @@ uint8_t Get_Lowest_Bit(uint8_t value)
 }
 
 
-uint8_t Binary_Into_Int(uint8_t* ptr)
-{
-	int i;
-	int result=0;
-	int exponent=7;
-	for(i=0;i<8;i++)
-	{
-		if((*ptr) == 1)
-		{
-			result += pow(2,exponent);
-		}
-		else
-		{
-			//do nothing
-		}
-		ptr--;
-		exponent--;
 
-	}
-	return result;
-}
 
-void Check_Chars(void)
-{
-	check_first_char = Binary_Into_Int(start_of_first_char);
-	check_second_char = Binary_Into_Int(start_of_second_char);
-	check_third_char = Binary_Into_Int(start_of_third_char);
-	check_fourth_char = Binary_Into_Int(start_of_fourth_char);
-
-	state = TRANSMITTING; // end transmittion
-	check_tab_counter=0;
-}
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -284,25 +215,17 @@ int main(void)
 
 
 
-  check_first_char=1;
-  check_second_char=1;
-  check_third_char=1;
-  check_fourth_char=1;
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 	while (1)
 	{
-		if(state == TRANSMITTING)
+		if(state_of_transmition == TRANSMITTING)
 	  	{
 			Send_Message();
 	  	}
-		else if (state == CHECKING_CHARS)
-		{
-			Check_Chars();
-		}
-
 	}
 
     /* USER CODE END WHILE */
@@ -399,7 +322,7 @@ static void MX_TIM10_Init(void)
   htim10.Instance = TIM10;
   htim10.Init.Prescaler = 9999;
   htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim10.Init.Period = 9;
+  htim10.Init.Period = 154;
   htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim10) != HAL_OK)

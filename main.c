@@ -37,6 +37,7 @@
 
 #define MESSAGE_LENGTH 4
 #define FIRST_CHAR_TO_SEND 3
+#define LAST_BIT_SHIFTED 8
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -110,7 +111,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)// interrupt from tim
 	 			send_buffer[msg_counter] = send_buffer[msg_counter] >> bit_shift;// shift char by one bit
 	 			shift_counter++; // add one shift
 
-				if(shift_counter == 8) // if one char is whole masked and send to pin
+				if(shift_counter == LAST_BIT_SHIFTED) // if one char is whole masked and send to pin
 				{
 					shift_counter = 0;// reset shift counter
 					msg_counter--; // // move to next char in message[]

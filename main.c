@@ -20,7 +20,9 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
+#define LAST_BIT_IN_MSG 9
+#define MSG_SIZE 4
+#define FIRST_CHAR_CELL 3
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -52,9 +54,9 @@ enum recieve_state_machine
 
 }typedef recieve_state_type;
 recieve_state_type recieve_state = IDLE;
-int8_t msg_cnt = 3;// counter to go throw msg[]
+int8_t msg_cnt = FIRST_CHAR_CELL;// counter to go throw msg[]
 uint8_t bit_cnt = 0;// counter to
-uint8_t ready_msg[4]; // to store ready chars
+uint8_t msg[MSG_SIZE]; // to store ready chars
 uint8_t bit_position = 0; // to move single state of pin
 uint16_t result = 0x00; // to store char
 
@@ -103,10 +105,10 @@ void Read_Pin_Status() // read status of RT_PIN
 	result = result | single_state; // write single bit to result
 	bit_position++; // encounter bit_position to correct write next bit state
 
-    if(bit_position == 9) // when whole char is received and start bit too
+    if(bit_position == LAST_BIT_IN_MSG) // when whole char is received and start bit too
 	{
 		result = result >> 1; // get rid of start bit
-		ready_msg[msg_cnt] = (uint8_t)result; // write ready char to msg[]
+		msg[msg_cnt] = (uint8_t)result; // write ready char to msg[]
 		bit_position = 0; // reset bit_position
 		msg_cnt--; // move to next cell in msg[]
 		result = 0; // prepare result to receive next char
@@ -163,11 +165,11 @@ int main(void)
 	  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_13);
 		 if(msg_cnt == -1)
 		  {
-			  first_char = ready_msg[0];
-			  second_char = ready_msg[1];
-			  third_char = ready_msg[2];
-			  fourth_char = ready_msg[3];
-			  msg_cnt = 3;
+			  first_char = msg[0];
+			  second_char = msg[1];
+			  third_char = msg[2];
+			  fourth_char = msg[3];
+			  msg_cnt = FIRST_CHAR_CELL;
 			  recieve_state = IDLE;
 		  }
     /* USER CODE END WHILE */

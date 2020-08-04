@@ -51,7 +51,7 @@ CRC_HandleTypeDef hcrc;
 TIM_HandleTypeDef htim10;
 
 /* USER CODE BEGIN PV */
-uint8_t send_buffer[MESSAGE_LENGTH]; // to hold input string
+char send_buffer[MESSAGE_LENGTH]; // to hold input string
 uint8_t size; // size of send_buffer[]
 
 enum state_machine
@@ -82,8 +82,8 @@ uint8_t test_zero;
 uint8_t test_one;
 uint8_t test_two;
 uint8_t test_three;
-uint8_t test_four;
-
+uint8_t send_counter = 0;
+uint8_t stupid_var = 0;
 
 void Send_To_Pin(uint8_t state); // change '0' and '1' to high and low states
 void Send_Message(void); // send message
@@ -93,17 +93,26 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)// interrupt from tim
 	uint8_t bit_shift = 0x01; // shift 1 bit
 	if(htim->Instance == TIM10 && state_of_transmition == SENDING_TO_PIN)// if interrupt from timer10 occurs and state machine is ready
  	{
-
+		stupid_var = 1;
 		if(state_of_sending == SETTING_START_BIT) // this is start of transmitting
 	 	{
 	 		HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_SET);
 	 		state_of_sending = DECODING;
+	 		stupid_var = 2;
 
 	 	}
 	 	else if (state_of_sending == SETTING_END_BIT) // this is end of transmiiting - set Low state
 	 	{
 	 		HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_RESET);
+			if(msg_counter == -1)
+			{
+
+				state_of_transmition = TRANSMITTING; // set state machine to checking chars
+				msg_counter = FIRST_CHAR_TO_SEND;
+				stupid_var = 3;
+			}
 	 		state_of_sending = SETTING_START_BIT; // back to first state
+	 		stupid_var = 11;
 	 	}
 	 	else //start decoding
 	 	{
@@ -111,19 +120,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)// interrupt from tim
 	 		Send_To_Pin(result); // changes state of pin
 	 		send_buffer[msg_counter] = send_buffer[msg_counter] >> bit_shift;// shift char by one bit
 	 		shift_counter++; // add one shift
-	 		HAL_GPIO_TogglePin(GPIOD,ORANGE_LIGHT_Pin);
+	 		HAL_GPIO_TogglePin(GPIOD,GREEN_LIGHT_Pin);
 			if(shift_counter == LAST_BIT_SHIFTED) // if one char is whole masked and send to pin
 			{
 				shift_counter = 0;// reset shift counter
 				msg_counter--; // // move to next char in message[]
 				state_of_sending = SETTING_END_BIT; // enable end of transmition
+				stupid_var = 4;
 			}
 
-			if(msg_counter == -1)
-			{
-				msg_counter = FIRST_CHAR_TO_SEND;
-				state_of_transmition = TRANSMITTING; // set state machine to checking chars
-			}
+
 
 	 	}
 
@@ -133,19 +139,20 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)// interrupt from tim
 
 void Send_Message(void)
 {
-
+	stupid_var = 14;
 	size = sprintf(send_buffer, "TEST");// to know how many chars are in send_buffer
+	stupid_var = 5;
 	test_zero=send_buffer[0];
 	test_one=send_buffer[1];
 	test_two=send_buffer[2];
 	test_three=send_buffer[3];
-
+	send_counter++;
 	state_of_transmition = SENDING_TO_PIN; // start Send_To_Pin() in timer10 interrupt
 
 }
 void Send_To_Pin(uint8_t state)
 {
-
+//test
 	if (state == 0) // if field of array equals to '0' set state of pin to low
 	{
 		HAL_GPIO_WritePin(COMMUNICATION_PIN_GPIO_Port,COMMUNICATION_PIN_Pin, GPIO_PIN_RESET);
@@ -218,7 +225,7 @@ int main(void)
 
 
 
-
+//test
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -227,12 +234,15 @@ int main(void)
 	{
 		if(state_of_transmition == TRANSMITTING)
 	  	{
+			stupid_var = 10;
+			HAL_GPIO_TogglePin(GPIOD,ORANGE_LIGHT_Pin);
 			Send_Message();
 
 
 	  	}
+		stupid_var = 13;
 	}
-
+//sgf
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -325,9 +335,9 @@ static void MX_TIM10_Init(void)
 
   /* USER CODE END TIM10_Init 1 */
   htim10.Instance = TIM10;
-  htim10.Init.Prescaler = 9999;
+  htim10.Init.Prescaler = 4;
   htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim10.Init.Period = 9999;
+  htim10.Init.Period = 499;
   htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim10) != HAL_OK)
